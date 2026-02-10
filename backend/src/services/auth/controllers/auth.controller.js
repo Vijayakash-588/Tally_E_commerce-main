@@ -24,6 +24,15 @@ exports.register = async (req, res, next) => {
       });
     }
 
+    // Check if email already exists
+    const existingUser = await prisma.users.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email already registered' 
+      });
+    }
+
     const hashed = await bcrypt.hash(password, 12);
     const user = await prisma.users.create({
       data: { 
@@ -44,7 +53,11 @@ exports.register = async (req, res, next) => {
       } 
     });
   } catch (err) {
-    next(err);
+    console.error('Registration error:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Registration failed. Please try again.' 
+    });
   }
 };
 

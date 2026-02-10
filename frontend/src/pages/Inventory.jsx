@@ -19,13 +19,17 @@ const Inventory = () => {
                     api.get('/products'),
                     api.get('/stock_items')
                 ]);
-                setProducts(productsRes.data || []);
-                setStockItems(stockRes.data || []);
+                // Handle both direct array and { data: [...] } format
+                const productsData = Array.isArray(productsRes.data) ? productsRes.data : (productsRes.data?.data || []);
+                const stockData = Array.isArray(stockRes.data) ? stockRes.data : (stockRes.data?.data || []);
+                setProducts(productsData);
+                setStockItems(stockData);
                 setError(null);
             } catch (err) {
                 console.error('Error fetching inventory:', err);
-                setError(err.response?.data?.message || 'Failed to load inventory');
-                toast.error(error);
+                const errorMsg = err.response?.data?.message || 'Failed to load inventory';
+                setError(errorMsg);
+                toast.error(errorMsg);
             } finally {
                 setLoading(false);
             }

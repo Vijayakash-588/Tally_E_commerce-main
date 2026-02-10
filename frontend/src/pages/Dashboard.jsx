@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Wallet,
     Landmark,
@@ -12,6 +12,8 @@ import {
     Package
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import api from '../api/axios';
+import toast from 'react-hot-toast';
 
 const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass }) => (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between h-40">
@@ -58,6 +60,91 @@ const TransactionRow = ({ date, type, reference, party, amount, typeColors }) =>
 );
 
 const Dashboard = () => {
+    const [stats, setStats] = useState({
+        totalSales: 0,
+        totalPurchases: 0,
+        totalProducts: 0,
+        activeProducts: 0,
+        monthlySales: 0,
+        monthlyPurchases: 0
+    });
+    const [recentTransactions, setRecentTransactions] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true);
+                const [salesRes, purchasesRes, productsRes] = await Promise.all([
+                    api.get('/sales'),
+                    api.get('/purchases'),
+                    api.get('/products')
+                ]);
+
+                const salesData = Array.isArray(salesRes.data) ? salesRes.data : (salesRes.data?.data || []);
+                const purchasesData = Array.isArray(purchasesRes.data) ? purchasesRes.data : (purchasesRes.data?.data || []);
+                const productsData = Array.isArray(productsRes.data) ? productsRes.data : (productsRes.data?.data || []);
+
+                // Calculate monthly totals
+                const now = new Date();
+                const currentMonth = salesData.filter(s => new Date(s.sale_date).getMonth() === now.getMonth());
+                const currentMonthPurchases = purchasesData.filter(p => new Date(p.purchase_date).getMonth() === now.getMonth());
+                
+                const totalSales = salesData.reduce((sum, sale) => sum + (parseFloat(sale.total) || 0), 0);
+                const totalPurchases = purchasesData.reduce((sum, purchase) => sum + (parseFloat(purchase.total) || 0), 0);
+                const monthlySales = currentMonth.reduce((sum, sale) => sum + (parseFloat(sale.total) || 0), 0);
+                const monthlyPurchases = currentMonthPurchases.reduce((sum, purchase) => sum + (parseFloat(purchase.total) || 0), 0);
+                const activeProducts = productsData.filter(p => p.is_active).length;
+
+                setStats({
+                    totalSales: totalSales,
+                    totalPurchases: totalPurchases,
+                    totalProducts: productsData.length,
+                    activeProducts: activeProducts,
+                    monthlySales: monthlySales,
+                    monthlyPurchases: monthlyPurchases
+                });
+
+                // Combine and sort recent transactions
+                const transactions = [
+                    ...salesData.slice(0, 5).map(s => ({
+                        date: new Date(s.sale_date).toLocaleDateString(),
+                        type: 'Sales',
+                        reference: `SALE-${s.id.substring(0, 8)}`,
+                        party: s.customers?.name || 'Customer',
+                        amount: `₹${parseFloat(s.total).toFixed(2)}`
+                    })),
+                    ...purchasesData.slice(0, 5).map(p => ({
+                        date: new Date(p.purchase_date).toLocaleDateString(),
+                        type: 'Purchase',
+                        reference: `PUR-${p.id.substring(0, 8)}`,
+                        party: p.suppliers?.name || 'Supplier',
+                        amount: `₹${parseFloat(p.total).toFixed(2)}`
+                    }))
+                ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+
+                setRecentTransactions(transactions);
+            } catch (err) {
+                console.error('Error fetching dashboard data:', err);
+                toast.error('Failed to load dashboard data');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, []);
+
+    const typeColors = {
+        'Sales': 'bg-green-100 text-green-800',
+        'Purchase': 'bg-red-100 text-red-800',
+        'Payment': 'bg-blue-100 text-blue-800',
+        'Receipt': 'bg-teal-100 text-teal-800'
+    };
+
+    if (loading) {
+        return <div className="flex justify-center items-center h-64">Loading dashboard...</div>;
+    }
 
     return (
         <div className="space-y-8">
@@ -65,34 +152,34 @@ const Dashboard = () => {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
-                    title="Cash-in-hand"
-                    amount="$12,450.00"
-                    change="+2.4%"
+                    title="Total Sales"
+                    amount={`₹${stats.totalSales.toFixed(2)}`}
+                    change={`+${((stats.monthlySales / stats.totalSales) * 100).toFixed(1)}% this month`}
                     changeType="positive"
                     icon={Wallet}
                     colorClass="bg-blue-500 text-blue-500"
                 />
                 <StatCard
-                    title="Bank Balance"
-                    amount="$85,200.50"
-                    change="-1.2%"
-                    changeType="negative"
+                    title="Total Purchases"
+                    amount={`₹${stats.totalPurchases.toFixed(2)}`}
+                    change={`+${((stats.monthlyPurchases / stats.totalPurchases) * 100).toFixed(1)}% this month`}
+                    changeType={stats.monthlyPurchases > 0 ? "positive" : "negative"}
                     icon={Landmark}
                     colorClass="bg-indigo-500 text-indigo-500"
                 />
                 <StatCard
-                    title="Total Sales (Monthly)"
-                    amount="$142,000.00"
-                    change="+15.3%"
+                    title="Total Products"
+                    amount={stats.totalProducts}
+                    change={`${stats.activeProducts} active`}
                     changeType="positive"
                     icon={ShoppingCart}
                     colorClass="bg-green-500 text-green-500"
                 />
                 <StatCard
-                    title="Total Purchases"
-                    amount="$98,300.00"
-                    change="-5.1%"
-                    changeType="negative"
+                    title="Monthly Sales"
+                    amount={`₹${stats.monthlySales.toFixed(2)}`}
+                    change="+5.2%"
+                    changeType="positive"
                     icon={ShoppingBag}
                     colorClass="bg-orange-500 text-orange-500"
                 />
@@ -162,22 +249,23 @@ const Dashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    <TransactionRow
-                                        date="24 Oct 2023" type="sales" reference="INV-2023-089" party="Global Tech Solutions" amount="$4,250.00"
-                                        typeColors={{ sales: 'bg-green-100 text-green-700', payment: 'bg-blue-100 text-blue-700', receipt: 'bg-purple-100 text-purple-700', purchase: 'bg-orange-100 text-orange-700' }}
-                                    />
-                                    <TransactionRow
-                                        date="23 Oct 2023" type="payment" reference="PAY-4452" party="Office Supplies Inc" amount="$840.00"
-                                        typeColors={{ sales: 'bg-green-100 text-green-700', payment: 'bg-blue-100 text-blue-700', receipt: 'bg-purple-100 text-purple-700', purchase: 'bg-orange-100 text-orange-700' }}
-                                    />
-                                    <TransactionRow
-                                        date="22 Oct 2023" type="receipt" reference="REC-1092" party="Alpha Logistics" amount="$1,100.00"
-                                        typeColors={{ sales: 'bg-green-100 text-green-700', payment: 'bg-blue-100 text-blue-700', receipt: 'bg-purple-100 text-purple-700', purchase: 'bg-orange-100 text-orange-700' }}
-                                    />
-                                    <TransactionRow
-                                        date="21 Oct 2023" type="purchase" reference="PUR-8812" party="Metro Wholesale" amount="$2,750.00"
-                                        typeColors={{ sales: 'bg-green-100 text-green-700', payment: 'bg-blue-100 text-blue-700', receipt: 'bg-purple-100 text-purple-700', purchase: 'bg-orange-100 text-orange-700' }}
-                                    />
+                                    {recentTransactions.length > 0 ? (
+                                        recentTransactions.map((txn, idx) => (
+                                            <TransactionRow
+                                                key={idx}
+                                                date={txn.date}
+                                                type={txn.type.toLowerCase()}
+                                                reference={txn.reference}
+                                                party={txn.party}
+                                                amount={txn.amount}
+                                                typeColors={typeColors}
+                                            />
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="5" className="px-6 py-4 text-center text-gray-500">No transactions found</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Search,
     Bell,
@@ -15,8 +15,62 @@ import {
     LayoutDashboard,
     Search as SearchIcon
 } from 'lucide-react';
+import api from '../api/axios';
+import toast from 'react-hot-toast';
 
 const SalesInvoice = () => {
+    const [invoices, setInvoices] = useState([]);
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        invoice_number: '',
+        customer_id: '',
+        issue_date: new Date().toISOString().split('T')[0],
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        total_amount: 0,
+        tax: 0,
+        discount: 0,
+        paid_amount: 0,
+        status: 'DRAFT',
+        notes: ''
+    });
+
+    useEffect(() => {
+        const fetchInvoices = async () => {
+            try {
+                setLoading(true);
+                const response = await api.get('/invoices');
+                const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+                setInvoices(data);
+                if (data.length > 0) {
+                    setSelectedInvoice(data[0]);
+                    setFormData(data[0]);
+                }
+            } catch (err) {
+                console.error('Failed to load invoices:', err);
+                toast.error('Failed to load invoices');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchInvoices();
+    }, []);
+
+    const handleSaveInvoice = async () => {
+        try {
+            if (selectedInvoice?.id) {
+                await api.put(`/invoices/${selectedInvoice.id}`, formData);
+                toast.success('Invoice updated');
+            } else {
+                const response = await api.post('/invoices', formData);
+                setInvoices([...invoices, response.data?.data || response.data]);
+                toast.success('Invoice created');
+            }
+        } catch (err) {
+            toast.error('Failed to save invoice');
+        }
+    };
     return (
         <div className="min-h-screen bg-[#F3F6F9] font-sans text-slate-700 flex flex-col">
             {/* Top Navigation Bar */}
@@ -91,7 +145,9 @@ const SalesInvoice = () => {
                         <div className="relative group">
                             <input
                                 type="text"
-                                defaultValue="SI/2023-24/0482"
+                                value={formData.invoice_number}
+                                onChange={(e) => setFormData({...formData, invoice_number: e.target.value})}
+                                placeholder="Enter invoice number"
                                 className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm font-bold text-slate-900 group-focus-within:border-[#2563EB]/40 outline-none transition-all"
                             />
                         </div>
@@ -100,8 +156,9 @@ const SalesInvoice = () => {
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Date</label>
                         <div className="relative group">
                             <input
-                                type="text"
-                                defaultValue="11/20/2023"
+                                type="date"
+                                value={formData.issue_date}
+                                onChange={(e) => setFormData({...formData, issue_date: e.target.value})}
                                 className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm font-bold text-slate-900 group-focus-within:border-[#2563EB]/40 outline-none transition-all pr-12"
                             />
                             <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -112,7 +169,9 @@ const SalesInvoice = () => {
                         <div className="relative group">
                             <input
                                 type="text"
-                                defaultValue="Modern Retail Solutions Ltd."
+                                value={formData.customer_id}
+                                onChange={(e) => setFormData({...formData, customer_id: e.target.value})}
+                                placeholder="Select customer"
                                 className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm font-bold text-slate-900 group-focus-within:border-[#2563EB]/40 outline-none transition-all pr-12"
                             />
                             <SearchIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#2563EB]" />
@@ -170,15 +229,15 @@ const SalesInvoice = () => {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center text-sm font-bold">
                                 <span className="text-slate-400">Sub Total</span>
-                                <span className="text-slate-900">6,10,000.00</span>
+                                <span className="text-slate-900">₹{(formData.total_amount - formData.tax).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm font-bold">
-                                <span className="text-slate-400">CGST @ 9%</span>
-                                <span className="text-slate-900">54,900.00</span>
+                                <span className="text-slate-400">Tax</span>
+                                <span className="text-slate-900">₹{formData.tax.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm font-bold">
-                                <span className="text-slate-400">SGST @ 9%</span>
-                                <span className="text-slate-900">54,900.00</span>
+                                <span className="text-slate-400">Discount</span>
+                                <span className="text-slate-900">-₹{formData.discount.toFixed(2)}</span>
                             </div>
                         </div>
 
@@ -187,9 +246,9 @@ const SalesInvoice = () => {
                         <div className="text-right space-y-1 py-2">
                             <div className="flex justify-end items-end space-x-4">
                                 <span className="text-lg font-black text-slate-900 pb-1.5 uppercase tracking-wide">Total Amount</span>
-                                <span className="text-4xl font-black text-[#2563EB] tracking-tight">₹ 7,19,800.00</span>
+                                <span className="text-4xl font-black text-[#2563EB] tracking-tight">₹ {formData.total_amount.toFixed(2)}</span>
                             </div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-10">Seven Lakh Nineteen Thousand Eight Hundred Only</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-10">Status: {formData.status}</p>
                         </div>
                     </div>
                 </div>
@@ -200,11 +259,13 @@ const SalesInvoice = () => {
                         <Printer className="w-5 h-5" />
                         <span>Print Invoice</span>
                     </button>
-                    <button className="flex items-center space-x-3 bg-[#DBEAFE] px-8 py-4 rounded-xl text-sm font-black text-[#2563EB] hover:bg-blue-200 transition-all">
+                    <button className="flex items-center space-x-3 bg-[#DBEAFE] px-8 py-4 rounded-xl text-sm font-black text-[#2563EB] hover:bg-blue-200 transition-all"
+                        onClick={() => handleSaveInvoice()}>
                         <Save className="w-5 h-5" />
                         <span>Save Draft</span>
                     </button>
-                    <button className="flex items-center space-x-3 bg-[#2563EB] px-10 py-4 rounded-xl text-sm font-black text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95">
+                    <button className="flex items-center space-x-3 bg-[#2563EB] px-10 py-4 rounded-xl text-sm font-black text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
+                        onClick={() => handleSaveInvoice()}>
                         <CheckCircle2 className="w-5 h-5" />
                         <span>Post to Ledger (Alt + S)</span>
                     </button>

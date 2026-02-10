@@ -9,7 +9,7 @@ import clsx from 'clsx';
 const ProductModal = ({ isOpen, onClose, product }) => {
     const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm({
         defaultValues: product || {
-            name: '', sku: '', category: '', unit: 'PCS', opening_qty: 0, sale_price: 0
+            name: '', sku: '', group: '', category: '', unit: 'PCS', opening_qty: 0, item_type: 'FINISHED', is_active: true
         }
     });
     const queryClient = useQueryClient();
@@ -17,16 +17,17 @@ const ProductModal = ({ isOpen, onClose, product }) => {
     // Reset form when product changes
     React.useEffect(() => {
         reset(product || {
-            name: '', sku: '', category: '', unit: 'PCS', opening_qty: 0, sale_price: 0
+            name: '', sku: '', group: '', category: '', unit: 'PCS', opening_qty: 0, item_type: 'FINISHED', is_active: true
         });
     }, [product, reset]);
 
     const mutation = useMutation({
         mutationFn: (data) => {
-            // Convert numbers
+            // Convert numbers and normalize booleans from select values
             const payload = {
                 ...data,
-                opening_qty: Number(data.opening_qty)
+                opening_qty: Number(data.opening_qty),
+                is_active: (data.is_active === true || data.is_active === 'true' || data.is_active === '1')
             };
 
             if (product?.id) {
@@ -77,6 +78,14 @@ const ProductModal = ({ isOpen, onClose, product }) => {
                         {errors.sku && <span className="text-red-500 text-xs">{errors.sku.message}</span>}
                     </div>
 
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
+                        <input
+                            {...register('group')}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
+                        />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
@@ -95,6 +104,30 @@ const ProductModal = ({ isOpen, onClose, product }) => {
                                 <option value="KG">KG</option>
                                 <option value="BOX">BOX</option>
                                 <option value="MTR">MTR</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Item Type</label>
+                            <select
+                                {...register('item_type')}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
+                            >
+                                <option value="FINISHED">Finished Goods</option>
+                                <option value="RAW">Raw Material</option>
+                                <option value="SERVICE">Service</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                            <select
+                                {...register('is_active')}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
+                            >
+                                <option value={true}>Active</option>
+                                <option value={false}>Inactive</option>
                             </select>
                         </div>
                     </div>
@@ -170,21 +203,7 @@ const Products = () => {
         setIsModalOpen(true);
     }
 
-    const filteredProducts = products?.data?.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || [];
-    // Note: Backend might return { items: [], ... } or just array, or { data: [] }. 
-    // Standard axios response.data usually contains the backend payload.
-    // Assuming backend returns { success: true, data: [...] } based on standard patterns or just array.
-    // Based on app.js error handler: res.json({ success: false ... }). 
-    // Success response structure is not visible but likely { success: true, data: ... } or just data.
-    // I'll assume `products.data` or `products` is the array. 
-    // If `getProducts` returns `response.data`, then `products` here is that data.
-    // If backend sends `res.json(products)`, then `products` is the array.
-    // If backend sends `res.json({ data: products })`, then `products.data` is the array.
-    // I will handle both safe access in the render.
-
+    // Backend returns: { success: true, data: [...], count: ... }
     const items = Array.isArray(products) ? products : (products?.data || []);
 
     const finalFiltered = items.filter(p =>
@@ -225,8 +244,11 @@ const Products = () => {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">SKU</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Group</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock</th>
+                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -237,7 +259,7 @@ const Products = () => {
                                 </tr>
                             ) : finalFiltered.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">No products found</td>
+                                    <td colSpan="8" className="px-6 py-4 text-center text-gray-500">No products found</td>
                                 </tr>
                             ) : (
                                 finalFiltered.map((product) => (
@@ -249,10 +271,25 @@ const Products = () => {
                                             {product.sku}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {product.group || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {product.category || '-'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {product.item_type || 'FINISHED'}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
                                             {product.opening_qty} {product.unit}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                product.is_active
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-gray-100 text-gray-800'
+                                            }`}>
+                                                {product.is_active ? 'Active' : 'Inactive'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button
