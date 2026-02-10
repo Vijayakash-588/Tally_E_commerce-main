@@ -1,7 +1,184 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Download, Plus, ChevronDown, Filter, Loader } from 'lucide-react';
+import { Package, Search, Download, Plus, ChevronDown, Filter, Loader, X } from 'lucide-react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
+
+// Modal Component for Adding New Product
+const ProductModal = ({ isOpen, onClose, onSuccess }) => {
+    const [formData, setFormData] = useState({
+        name: '',
+        sku: '',
+        group: '',
+        category: '',
+        unit: 'Pcs',
+        opening_qty: 0,
+        description: ''
+    });
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: name === 'opening_qty' ? parseFloat(value) || 0 : value
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.name || !formData.sku) {
+            toast.error('Product name and SKU are required');
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            await api.post('/products', { ...formData, is_active: true, price: 0 });
+            toast.success('Product added successfully!');
+            setFormData({
+                name: '',
+                sku: '',
+                group: '',
+                category: '',
+                unit: 'Pcs',
+                opening_qty: 0,
+                description: ''
+            });
+            onClose();
+            onSuccess();
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to add product');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Add New Product</h2>
+                    <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Product Name *</label>
+                        <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleChange}
+                            placeholder="e.g., Product Name"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">SKU *</label>
+                        <input
+                            type="text"
+                            name="sku"
+                            value={formData.sku}
+                            onChange={handleChange}
+                            placeholder="e.g., SKU-001"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            required
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Group</label>
+                            <input
+                                type="text"
+                                name="group"
+                                value={formData.group}
+                                onChange={handleChange}
+                                placeholder="e.g., Electronics"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
+                            <input
+                                type="text"
+                                name="category"
+                                value={formData.category}
+                                onChange={handleChange}
+                                placeholder="e.g., Gadgets"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Unit</label>
+                            <select
+                                name="unit"
+                                value={formData.unit}
+                                onChange={handleChange}
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            >
+                                <option>Pcs</option>
+                                <option>Kg</option>
+                                <option>Ltr</option>
+                                <option>Box</option>
+                                <option>Ctn</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Opening Qty</label>
+                            <input
+                                type="number"
+                                name="opening_qty"
+                                value={formData.opening_qty}
+                                onChange={handleChange}
+                                placeholder="0"
+                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                        <textarea
+                            name="description"
+                            value={formData.description}
+                            onChange={handleChange}
+                            placeholder="Enter product description"
+                            rows="2"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        />
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 font-medium transition"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={submitting}
+                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition disabled:opacity-50"
+                        >
+                            {submitting ? 'Adding...' : 'Add Product'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
 
 const Inventory = () => {
     const [products, setProducts] = useState([]);
@@ -10,32 +187,34 @@ const Inventory = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterGroup, setFilterGroup] = useState('All');
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                const [productsRes, stockRes] = await Promise.all([
-                    api.get('/products'),
-                    api.get('/stock_items')
-                ]);
-                // Handle both direct array and { data: [...] } format
-                const productsData = Array.isArray(productsRes.data) ? productsRes.data : (productsRes.data?.data || []);
-                const stockData = Array.isArray(stockRes.data) ? stockRes.data : (stockRes.data?.data || []);
-                setProducts(productsData);
-                setStockItems(stockData);
-                setError(null);
-            } catch (err) {
-                console.error('Error fetching inventory:', err);
-                const errorMsg = err.response?.data?.message || 'Failed to load inventory';
-                setError(errorMsg);
-                toast.error(errorMsg);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchData();
     }, []);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const [productsRes, stockRes] = await Promise.all([
+                api.get('/products'),
+                api.get('/stock_items')
+            ]);
+            // Handle both direct array and { data: [...] } format
+            const productsData = Array.isArray(productsRes.data) ? productsRes.data : (productsRes.data?.data || []);
+            const stockData = Array.isArray(stockRes.data) ? stockRes.data : (stockRes.data?.data || []);
+            setProducts(productsData);
+            setStockItems(stockData);
+            setError(null);
+        } catch (err) {
+            console.error('Error fetching inventory:', err);
+            const errorMsg = err.response?.data?.message || 'Failed to load inventory';
+            setError(errorMsg);
+            toast.error(errorMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Combine products with stock data
     const getProductStock = (productId) => {
@@ -89,7 +268,9 @@ const Inventory = () => {
                             <Download className="w-4 h-4" />
                             <span className="hidden sm:inline">Export</span>
                         </button>
-                        <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition">
+                        <button 
+                            onClick={() => setIsModalOpen(true)}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition">
                             <Plus className="w-4 h-4" />
                             <span className="hidden sm:inline">New Item</span>
                         </button>
@@ -169,6 +350,13 @@ const Inventory = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Add Product Modal */}
+                <ProductModal 
+                    isOpen={isModalOpen} 
+                    onClose={() => setIsModalOpen(false)}
+                    onSuccess={fetchData}
+                />
             </div>
         </div>
     );
