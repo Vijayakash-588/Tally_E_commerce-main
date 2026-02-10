@@ -99,6 +99,7 @@ router.get('/', auth, controller.findAll);
  */
 router.get('/summary', auth, controller.getSummary);
 router.get('/tax-rates', auth, controller.getTaxRates);
+router.get('/payments', auth, controller.getPayments);
 
 /**
  * @swagger

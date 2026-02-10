@@ -8,14 +8,14 @@ const generateInvoiceNumber = async () => {
     orderBy: { created_at: 'desc' }
   });
 
-  const lastNumber = lastInvoice?.invoice_number 
-    ? parseInt(lastInvoice.invoice_number.split('-')[1]) 
+  const lastNumber = lastInvoice?.invoice_number
+    ? parseInt(lastInvoice.invoice_number.split('-')[1])
     : 0;
 
   const today = new Date();
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, '0');
-  
+
   return `INV-${lastNumber + 1}-${year}${month}`;
 };
 
@@ -24,7 +24,7 @@ const generateInvoiceNumber = async () => {
  */
 exports.createInvoice = async (data) => {
   const invoiceNumber = await generateInvoiceNumber();
-  
+
   // If items provided, compute amounts and taxes per-line
   let totalAmount = data.total_amount || 0;
   let totalTax = 0;
@@ -97,7 +97,11 @@ exports.createInvoice = async (data) => {
  */
 exports.findAllInvoices = async () => {
   return prisma.invoices.findMany({
-    include: { line_items: true },
+    include: {
+      line_items: true,
+      payments: true,
+      customers: true
+    },
     orderBy: { created_at: 'desc' }
   });
 };
@@ -108,7 +112,11 @@ exports.findAllInvoices = async () => {
 exports.findInvoiceById = async (id) => {
   return prisma.invoices.findUnique({
     where: { id },
-    include: { line_items: true }
+    include: {
+      line_items: true,
+      payments: true,
+      customers: true
+    }
   });
 };
 
@@ -118,7 +126,11 @@ exports.findInvoiceById = async (id) => {
 exports.findByInvoiceNumber = async (invoiceNumber) => {
   return prisma.invoices.findUnique({
     where: { invoice_number: invoiceNumber },
-    include: { line_items: true }
+    include: {
+      line_items: true,
+      payments: true,
+      customers: true
+    }
   });
 };
 
@@ -128,7 +140,10 @@ exports.findByInvoiceNumber = async (invoiceNumber) => {
 exports.findByCustomer = async (customerId) => {
   return prisma.invoices.findMany({
     where: { customer_id: customerId },
-    include: { line_items: true },
+    include: {
+      line_items: true,
+      payments: true
+    },
     orderBy: { created_at: 'desc' }
   });
 };
@@ -139,7 +154,10 @@ exports.findByCustomer = async (customerId) => {
 exports.findByStatus = async (status) => {
   return prisma.invoices.findMany({
     where: { status },
-    include: { line_items: true },
+    include: {
+      line_items: true,
+      payments: true
+    },
     orderBy: { created_at: 'desc' }
   });
 };
@@ -155,7 +173,10 @@ exports.findByDateRange = async (startDate, endDate) => {
         lte: endDate
       }
     },
-    include: { line_items: true },
+    include: {
+      line_items: true,
+      payments: true
+    },
     orderBy: { created_at: 'desc' }
   });
 };
@@ -170,7 +191,10 @@ exports.updateInvoice = async (id, data) => {
       ...data,
       updated_at: new Date()
     },
-    include: { line_items: true }
+    include: {
+      line_items: true,
+      payments: true
+    }
   });
 };
 
@@ -180,11 +204,14 @@ exports.updateInvoice = async (id, data) => {
 exports.updateStatus = async (id, status) => {
   return prisma.invoices.update({
     where: { id },
-    data: { 
+    data: {
       status,
       updated_at: new Date()
     },
-    include: { line_items: true }
+    include: {
+      line_items: true,
+      payments: true
+    }
   });
 };
 
@@ -194,30 +221,52 @@ exports.updateStatus = async (id, status) => {
 exports.sendInvoice = async (id) => {
   return prisma.invoices.update({
     where: { id },
-    data: { 
+    data: {
       status: 'SENT',
       updated_at: new Date()
     },
-    include: { line_items: true }
+    include: {
+      line_items: true,
+      payments: true
+    }
   });
 };
 
 /**
  * Record payment
  */
-exports.recordPayment = async (id, amount) => {
+exports.recordPayment = async (id, amount, paymentDetails = {}) => {
   const invoice = await prisma.invoices.findUnique({ where: { id } });
-  const totalPaid = (invoice.paid_amount || 0) + amount;
-  const status = totalPaid >= invoice.total_amount ? 'PAID' : 'PARTIAL';
+  const totalPaid = (Number(invoice.paid_amount) || 0) + Number(amount);
+  const status = totalPaid >= Number(invoice.total_amount) ? 'PAID' : 'PARTIAL';
 
-  return prisma.invoices.update({
-    where: { id },
-    data: {
-      paid_amount: totalPaid,
-      status,
-      updated_at: new Date()
-    },
-    include: { line_items: true }
+  // Use a transaction to ensure both payment record and invoice update succeed
+  return prisma.$transaction(async (tx) => {
+    // 1. Create the payment record
+    await tx.payments.create({
+      data: {
+        invoice_id: id,
+        amount: Number(amount),
+        method: paymentDetails.method || 'bank_transfer',
+        reference: paymentDetails.reference || null,
+        notes: paymentDetails.notes || null,
+        date: paymentDetails.date || new Date()
+      }
+    });
+
+    // 2. Update the invoice
+    return tx.invoices.update({
+      where: { id },
+      data: {
+        paid_amount: totalPaid,
+        status,
+        updated_at: new Date()
+      },
+      include: {
+        line_items: true,
+        payments: true
+      }
+    });
   });
 };
 
@@ -235,7 +284,7 @@ exports.getInvoiceSummary = async (startDate, endDate) => {
   // Use default dates if not provided
   const start = startDate && !isNaN(startDate) ? startDate : new Date(new Date().setDate(new Date().getDate() - 30));
   const end = endDate && !isNaN(endDate) ? endDate : new Date();
-  
+
   const invoices = await prisma.invoices.findMany({
     where: {
       created_at: {
