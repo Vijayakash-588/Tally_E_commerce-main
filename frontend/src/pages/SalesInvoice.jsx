@@ -35,42 +35,95 @@ const SalesInvoice = () => {
         notes: ''
     });
 
+    const [items, setItems] = useState([]);
+    const [products, setProducts] = useState([]);
+    const [taxRates, setTaxRates] = useState([]);
+
     useEffect(() => {
-        const fetchInvoices = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
-                const response = await api.get('/invoices');
-                const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-                setInvoices(data);
-                if (data.length > 0) {
-                    setSelectedInvoice(data[0]);
-                    setFormData(data[0]);
+                const [invoicesRes, productsRes, taxRes] = await Promise.all([
+                    api.get('/invoices'),
+                    api.get('/products'),
+                    api.get('/invoices/tax-rates')
+                ]);
+
+                const inv = Array.isArray(invoicesRes.data) ? invoicesRes.data : (invoicesRes.data?.data || []);
+                const prod = Array.isArray(productsRes.data) ? productsRes.data : (productsRes.data?.data || []);
+                const taxes = Array.isArray(taxRes.data) ? taxRes.data : (taxRes.data?.data || []);
+
+                setInvoices(inv);
+                setProducts(prod);
+                setTaxRates(taxes);
+
+                if (inv.length > 0) {
+                    setSelectedInvoice(inv[0]);
+                    setFormData(inv[0]);
+                    setItems(inv[0].line_items || []);
                 }
             } catch (err) {
-                console.error('Failed to load invoices:', err);
-                toast.error('Failed to load invoices');
+                console.error('Failed to load invoices/products/tax rates:', err);
+                toast.error('Failed to load invoice data');
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchInvoices();
+        fetchData();
     }, []);
+
+    const recalcTotals = (itemsArr, discount = 0) => {
+        const subtotal = itemsArr.reduce((s, it) => s + (Number(it.amount || 0)), 0);
+        const taxTotal = itemsArr.reduce((s, it) => s + (Number(it.tax_amount || 0)), 0);
+        const total = subtotal - (Number(discount) || 0);
+        return { subtotal, taxTotal, total };
+    };
 
     const handleSaveInvoice = async () => {
         try {
+            const payload = {
+                ...formData,
+                items: items.map(it => ({
+                    product_id: it.product_id,
+                    description: it.description,
+                    quantity: it.quantity,
+                    unit_price: it.unit_price,
+                    tax_rate_id: it.tax_rate_id
+                })),
+                tax: items.reduce((s, it) => s + Number(it.tax_amount || 0), 0),
+                total_amount: items.reduce((s, it) => s + Number(it.amount || 0), 0) - (Number(formData.discount) || 0)
+            };
+
             if (selectedInvoice?.id) {
-                await api.put(`/invoices/${selectedInvoice.id}`, formData);
+                await api.put(`/invoices/${selectedInvoice.id}`, payload);
                 toast.success('Invoice updated');
             } else {
-                const response = await api.post('/invoices', formData);
+                const response = await api.post('/invoices', payload);
                 setInvoices([...invoices, response.data?.data || response.data]);
                 toast.success('Invoice created');
             }
         } catch (err) {
-            toast.error('Failed to save invoice');
+            console.error(err);
+            toast.error(err.response?.data?.message || 'Failed to save invoice');
         }
     };
+    const handleAddItem = () => {
+        setItems(prev => [...prev, { product_id: '', description: '', quantity: 1, unit_price: 0, tax_rate_id: null, tax_amount: 0, amount: 0 }]);
+    };
+
+    const handleRemoveItem = (index) => {
+        const copy = [...items];
+        copy.splice(index, 1);
+        setItems(copy);
+    };
+
+    // Recalculate totals into formData when items change
+    useEffect(() => {
+        const { subtotal, taxTotal, total } = recalcTotals(items, formData.discount);
+        setFormData(fd => ({ ...fd, total_amount: total, tax: taxTotal }));
+    }, [items, formData.discount]);
+
     return (
         <div className="min-h-screen bg-[#F3F6F9] font-sans text-slate-700 flex flex-col">
             {/* Top Navigation Bar */}
@@ -192,23 +245,48 @@ const SalesInvoice = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 font-bold text-slate-900">
-                            <tr className="hover:bg-slate-50/50 transition-colors">
-                                <td className="px-8 py-5">Dell Latitude 5420 Laptop</td>
-                                <td className="px-6 py-5 text-right font-black">10</td>
-                                <td className="px-6 py-5 text-right font-black text-slate-500">55,000.00</td>
-                                <td className="px-6 py-5 text-center text-[#2563EB]">Nos</td>
-                                <td className="px-8 py-5 text-right text-xl font-black">5,50,000.00</td>
-                            </tr>
-                            <tr className="hover:bg-slate-50/50 transition-colors">
-                                <td className="px-8 py-5">Wireless Keyboard & Mouse Combo</td>
-                                <td className="px-6 py-5 text-right font-black">25</td>
-                                <td className="px-6 py-5 text-right font-black text-slate-500">2,400.00</td>
-                                <td className="px-6 py-5 text-center text-[#2563EB]">Sets</td>
-                                <td className="px-8 py-5 text-right text-xl font-black">60,000.00</td>
-                            </tr>
-                            <tr className="bg-slate-50/30 italic">
-                                <td colSpan={5} className="px-8 py-5 text-slate-400 text-sm font-medium">Press Enter to add item...</td>
-                            </tr>
+                            {items.length > 0 ? (
+                                items.map((it, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-8 py-5">
+                                            <select
+                                                value={it.product_id || ''}
+                                                onChange={(e) => {
+                                                    const pid = e.target.value;
+                                                    const prod = products.find(p => p.id === pid);
+                                                    const updated = { ...it, product_id: pid, description: prod?.name || it.description, unit_price: prod?.opening_qty ? Number(prod.opening_qty) : (it.unit_price || 0) };
+                                                    const newItems = [...items]; newItems[idx] = updated; setItems(newItems);
+                                                }}
+                                                className="w-full bg-transparent border-none outline-none"
+                                            >
+                                                <option value="">Select product</option>
+                                                {products.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name} — {p.sku}</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                        <td className="px-6 py-5 text-right font-black">
+                                            <input type="number" value={it.quantity} onChange={(e) => { const q = Number(e.target.value)||0; const upd = { ...it, quantity: q, amount: +(q * Number(it.unit_price || 0)) + Number(it.tax_amount||0) }; const newItems=[...items]; newItems[idx]=upd; setItems(newItems); }} className="w-20 text-right bg-transparent border-none outline-none" />
+                                        </td>
+                                        <td className="px-6 py-5 text-right font-black text-slate-500">
+                                            <input type="number" value={it.unit_price} onChange={(e) => { const up = Number(e.target.value)||0; const q = Number(it.quantity)||0; const taxRate = taxRates.find(t => t.id === it.tax_rate_id); const taxAmt = taxRate ? +(q * up * (Number(taxRate.rate)/100)) : 0; const upd = { ...it, unit_price: up, tax_amount: taxAmt, amount: +(q*up + taxAmt) }; const newItems=[...items]; newItems[idx]=upd; setItems(newItems); }} className="w-28 text-right bg-transparent border-none outline-none" />
+                                        </td>
+                                        <td className="px-6 py-5 text-center text-[#2563EB]">
+                                            <select value={it.tax_rate_id || ''} onChange={(e) => { const id = e.target.value || null; const taxRate = taxRates.find(t => t.id === id); const q = Number(it.quantity)||0; const up = Number(it.unit_price)||0; const taxAmt = taxRate ? +(q * up * (Number(taxRate.rate)/100)) : 0; const upd = { ...it, tax_rate_id: id, tax_amount: taxAmt, amount: +(q*up + taxAmt) }; const newItems=[...items]; newItems[idx]=upd; setItems(newItems); }} className="bg-transparent border-none outline-none">
+                                                <option value="">No Tax</option>
+                                                {taxRates.map(tr => (
+                                                    <option key={tr.id} value={tr.id}>{tr.name} ({tr.rate}%)</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                        <td className="px-8 py-5 text-right text-xl font-black">{Number(it.amount || 0).toFixed(2)}</td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr className="bg-slate-50/30 italic">
+                                    <td colSpan={5} className="px-8 py-5 text-slate-400 text-sm font-medium">Press Enter to add item...</td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

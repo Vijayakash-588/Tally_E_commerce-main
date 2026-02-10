@@ -25,11 +25,49 @@ const generateInvoiceNumber = async () => {
 exports.createInvoice = async (data) => {
   const invoiceNumber = await generateInvoiceNumber();
   
-  // Calculate total amount from items if provided
-  let totalAmount = data.total_amount;
-  if (data.items && data.items.length) {
-    const itemsTotal = data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    totalAmount = itemsTotal + (data.tax || 0) - (data.discount || 0);
+  // If items provided, compute amounts and taxes per-line
+  let totalAmount = data.total_amount || 0;
+  let totalTax = 0;
+  const lineItemsCreate = [];
+
+  if (Array.isArray(data.items) && data.items.length) {
+    for (const it of data.items) {
+      const qty = Number(it.quantity) || 0;
+      const unitPrice = Number(it.unit_price ?? it.unitPrice ?? 0) || 0;
+      const base = qty * unitPrice;
+      let taxAmount = 0;
+
+      // If a raw tax rate percentage is provided use it, otherwise resolve by tax_rate_id
+      if (it.tax_rate_percent != null) {
+        const pct = Number(it.tax_rate_percent) || 0;
+        taxAmount = +(base * (pct / 100));
+      } else if (it.tax_rate_id) {
+        // attempt to resolve tax rate
+        try {
+          const tr = await prisma.tax_rates.findUnique({ where: { id: it.tax_rate_id } });
+          const pct = tr ? Number(tr.rate) : 0;
+          taxAmount = +(base * (pct / 100));
+        } catch (e) {
+          taxAmount = 0;
+        }
+      }
+
+      const amount = +(base + taxAmount);
+      totalTax += taxAmount;
+      lineItemsCreate.push({
+        product_id: it.product_id,
+        quantity: qty,
+        unit_price: unitPrice,
+        amount: amount,
+        tax_rate_id: it.tax_rate_id || null,
+        tax_amount: taxAmount,
+        description: it.description || null
+      });
+    }
+
+    const itemsTotal = lineItemsCreate.reduce((s, li) => s + Number(li.amount || 0), 0);
+    totalAmount = itemsTotal - (Number(data.discount) || 0);
+    totalTax = totalTax;
   }
 
   return prisma.invoices.create({
@@ -39,11 +77,14 @@ exports.createInvoice = async (data) => {
       issue_date: data.issue_date || new Date(),
       due_date: data.due_date,
       total_amount: totalAmount,
-      tax: data.tax || 0,
-      discount: data.discount || 0,
-      status: 'DRAFT',
+      tax: totalTax || Number(data.tax) || 0,
+      discount: Number(data.discount) || 0,
+      status: data.status || 'DRAFT',
       notes: data.notes,
-      paid_amount: 0
+      paid_amount: 0,
+      line_items: {
+        create: lineItemsCreate
+      }
     },
     include: {
       line_items: true
@@ -233,12 +274,47 @@ exports.getInvoiceSummary = async (startDate, endDate) => {
  * Add line item to invoice
  */
 exports.addLineItem = async (invoiceId, lineItemData) => {
-  return prisma.invoice_items.create({
+  // Compute tax if tax_rate_percent or tax_rate_id provided
+  const qty = Number(lineItemData.quantity) || 0;
+  const unitPrice = Number(lineItemData.unit_price ?? lineItemData.unitPrice ?? 0) || 0;
+  const base = qty * unitPrice;
+  let taxAmount = 0;
+
+  if (lineItemData.tax_rate_percent != null) {
+    const pct = Number(lineItemData.tax_rate_percent) || 0;
+    taxAmount = +(base * (pct / 100));
+  } else if (lineItemData.tax_rate_id) {
+    try {
+      const tr = await prisma.tax_rates.findUnique({ where: { id: lineItemData.tax_rate_id } });
+      const pct = tr ? Number(tr.rate) : 0;
+      taxAmount = +(base * (pct / 100));
+    } catch (e) {
+      taxAmount = 0;
+    }
+  }
+
+  const amount = +(base + taxAmount);
+
+  const created = await prisma.invoice_items.create({
     data: {
       invoice_id: invoiceId,
-      ...lineItemData
+      product_id: lineItemData.product_id,
+      quantity: qty,
+      unit_price: unitPrice,
+      amount,
+      tax_rate_id: lineItemData.tax_rate_id || null,
+      tax_amount: taxAmount || 0,
+      description: lineItemData.description || null
     }
   });
+
+  // Recalculate invoice totals
+  const items = await prisma.invoice_items.findMany({ where: { invoice_id: invoiceId } });
+  const totalAmount = items.reduce((s, it) => s + Number(it.amount || 0), 0);
+  const totalTax = items.reduce((s, it) => s + Number(it.tax_amount || 0), 0);
+  await prisma.invoices.update({ where: { id: invoiceId }, data: { total_amount: totalAmount, tax: totalTax } });
+
+  return created;
 };
 
 /**
@@ -282,4 +358,11 @@ exports.getOverdueInvoices = async () => {
     include: { line_items: true },
     orderBy: { due_date: 'asc' }
   });
+};
+
+/**
+ * Get available tax rates
+ */
+exports.getTaxRates = async () => {
+  return prisma.tax_rates.findMany({ orderBy: { created_at: 'desc' } });
 };

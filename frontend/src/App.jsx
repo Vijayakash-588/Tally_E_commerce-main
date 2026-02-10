@@ -11,14 +11,11 @@ import Register from './pages/Register';
 import StockSummary from './pages/Inventory';
 import SalesInvoice from './pages/SalesInvoice';
 import ProfitLoss from './pages/ProfitLoss';
-
-// Placeholder components for other routes
-const Placeholder = ({ title }) => (
-  <div className="p-4">
-    <h1 className="text-2xl font-bold mb-4">{title}</h1>
-    <p>Coming soon...</p>
-  </div>
-);
+import Suppliers from './pages/Suppliers';
+import Customers from './pages/Customers';
+import Purchases from './pages/Purchases';
+import Banking from './pages/Banking';
+import StockMovements from './pages/StockMovements';
 
 function App() {
   return (
@@ -37,9 +34,13 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/products" element={<Products />} />
               <Route path="/sales" element={<SalesInvoice />} />
-              <Route path="/purchases" element={<Placeholder title="Purchases" />} />
-              <Route path="/customers" element={<Placeholder title="Customers" />} />
-              <Route path="/suppliers" element={<Placeholder title="Suppliers" />} />
+              <Route path="/purchases" element={<Purchases />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/suppliers" element={<Suppliers />} />
+              <Route path="/banking" element={<Banking />} />
+              <Route path="/stock-movements" element={<StockMovements />} />
+              <Route path="/reports/profit-loss" element={<ProfitLoss />} />
+              <Route path="/inventory" element={<StockSummary />} />
             </Route>
           </Route>
 

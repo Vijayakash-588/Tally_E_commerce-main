@@ -14,7 +14,11 @@ import {
     MessageSquare,
     Menu,
     X,
-    ChevronDown
+    Users,
+    Truck,
+    ShoppingCart,
+    TrendingUp,
+    Zap
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -76,12 +80,27 @@ const DashboardLayout = () => {
                 <div className="flex-1 overflow-y-auto px-4 py-6">
                     <nav>
                         <SidebarItem to="/" icon={LayoutDashboard}>Dashboard</SidebarItem>
-                        <SidebarItem to="/active-stock" icon={Package}>Stock Summary</SidebarItem>
-                        <SidebarItem to="/sales" icon={FileText}>Accounting Vouchers</SidebarItem>
-                        <SidebarItem to="/products" icon={Package}>Inventory Info</SidebarItem>
-                        <SidebarItem to="/reports" icon={BarChart3}>Reports</SidebarItem>
-                        <SidebarItem to="/banking" icon={Landmark}>Banking</SidebarItem>
-                        <SidebarItem to="/settings" icon={Settings}>Settings</SidebarItem>
+                        
+                        {/* Transactions */}
+                        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-2 mt-4">Transactions</div>
+                        <SidebarItem to="/sales" icon={ShoppingCart}>Sales</SidebarItem>
+                        <SidebarItem to="/purchases" icon={Truck}>Purchases</SidebarItem>
+                        
+                        {/* Masters */}
+                        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-2 mt-4">Masters</div>
+                        <SidebarItem to="/products" icon={Package}>Products</SidebarItem>
+                        <SidebarItem to="/customers" icon={Users}>Customers</SidebarItem>
+                        <SidebarItem to="/suppliers" icon={Truck}>Suppliers</SidebarItem>
+                        
+                        {/* Inventory */}
+                        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-2 mt-4">Inventory</div>
+                        <SidebarItem to="/inventory" icon={Package}>Stock Summary</SidebarItem>
+                        <SidebarItem to="/stock-movements" icon={Zap}>Stock Movements</SidebarItem>
+                        
+                        {/* Finance */}
+                        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 py-2 mt-4">Finance</div>
+                        <SidebarItem to="/banking" icon={Landmark}>Banking & Payments</SidebarItem>
+                        <SidebarItem to="/reports/profit-loss" icon={TrendingUp}>Reports</SidebarItem>
                     </nav>
                 </div>
 

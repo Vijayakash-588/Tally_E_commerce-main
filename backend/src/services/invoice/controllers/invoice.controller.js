@@ -312,3 +312,15 @@ exports.getOverdue = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * Get tax rates
+ */
+exports.getTaxRates = async (req, res, next) => {
+  try {
+    const rates = await service.getTaxRates();
+    res.json({ success: true, data: rates, count: rates.length });
+  } catch (err) {
+    next(err);
+  }
+};
