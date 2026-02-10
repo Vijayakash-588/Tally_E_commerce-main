@@ -1,51 +1,179 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-    BarChart3,
-    Package,
-    LayoutDashboard,
-    FileText,
-    Settings,
-    Search,
-    Bell,
-    ChevronDown,
+    TrendingUp,
+    ArrowLeft,
     Download,
     Printer,
     Calendar,
-    PlusCircle,
-    MinusCircle,
-    ArrowUpRight,
-    TrendingUp,
     PieChart
 } from 'lucide-react';
 
 const ProfitLoss = () => {
+    const navigate = useNavigate();
+
+    // Sample P&L data - replace with API call
+    const data = {
+        period: '1-Apr-2023 to 31-Mar-2024',
+        expenses: {
+            openingStock: 45000,
+            purchases: 1250500,
+            directExpenses: 85200,
+            grossProfit: 584300,
+            indirectExpenses: 112000,
+            netProfit: 494300
+        },
+        incomes: {
+            sales: 1890000,
+            directIncomes: 12500,
+            closingStock: 62500,
+            indirectIncomes: 22000,
+            total: 1965000
+        }
+    };
+
+    const grossProfitPercent = ((data.expenses.grossProfit / data.incomes.sales) * 100).toFixed(1);
+    const netProfitPercent = ((data.expenses.netProfit / data.incomes.total) * 100).toFixed(1);
+
     return (
-        <div className="flex h-screen bg-[#F8FAFC] font-sans text-slate-700">
-            {/* Sidebar */}
-            <aside className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0">
-                <div className="p-6 border-b border-slate-100 flex items-center space-x-3">
-                    <div className="bg-[#2563EB] p-2 rounded-lg shadow-sm">
-                        <BarChart3 className="w-6 h-6 text-white" />
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            {/* Header */}
+            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+                <div className="max-w-7xl mx-auto px-6 py-4">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => navigate('/')}
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                title="Back to Dashboard"
+                            >
+                                <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                            </button>
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Profit & Loss Statement</h1>
+                                <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                    <Calendar className="w-4 h-4 mr-2" />
+                                    <span>{data.period}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors text-gray-700 dark:text-gray-300 text-sm font-medium">
+                                <Download className="w-4 h-4" />
+                                Export
+                            </button>
+                            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                                <Printer className="w-4 h-4" />
+                                Print
+                            </button>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-sm font-bold text-slate-900 leading-none">Acme Corp</h1>
-                        <p className="text-[10px] text-slate-400 font-medium mt-1 uppercase tracking-tight">FY 2023-24</p>
+                </div>
+            </div>
+
+            {/* Content */}
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                {/* T-Shape P&L Table */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    {/* Expenses Side */}
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                        <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="flex justify-between items-center">
+                                <span className="font-bold text-gray-900 dark:text-white">Expenses</span>
+                                <span className="text-sm text-gray-600 dark:text-gray-400">Amount (₹)</span>
+                            </div>
+                        </div>
+                        <div className="p-6 space-y-3">
+                            <TableRow label="Opening Stock" value={data.expenses.openingStock} />
+                            <TableRow label="Purchases" value={data.expenses.purchases} />
+                            <TableRow label="Direct Expenses" value={data.expenses.directExpenses} />
+                            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <TableRow label="Gross Profit c/o" value={data.expenses.grossProfit} highlight />
+                            </div>
+                            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <TableRow label="Indirect Expenses" value={data.expenses.indirectExpenses} />
+                            </div>
+                            <div className="pt-4 border-t-2 border-blue-600">
+                                <TableRow label="Net Profit" value={data.expenses.netProfit} bold />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Incomes Side */}
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                        <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="flex justify-between items-center">
+                                <span className="font-bold text-gray-900 dark:text-white">Incomes</span>
+                                <span className="text-sm text-gray-600 dark:text-gray-400">Amount (₹)</span>
+                            </div>
+                        </div>
+                        <div className="p-6 space-y-3">
+                            <TableRow label="Sales Accounts" value={data.incomes.sales} />
+                            <TableRow label="Direct Incomes" value={data.incomes.directIncomes} />
+                            <TableRow label="Closing Stock" value={data.incomes.closingStock} />
+                            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <TableRow label="Gross Profit b/f" value={data.expenses.grossProfit} highlight />
+                            </div>
+                            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                                <TableRow label="Indirect Incomes" value={data.incomes.indirectIncomes} />
+                            </div>
+                            <div className="pt-4 border-t-2 border-blue-600">
+                                <TableRow label="Total Incomes" value={data.incomes.total} bold />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                    <SidebarItem icon={LayoutDashboard} label="Dashboard" />
-                    <SidebarItem icon={FileText} label="Vouchers" />
-                    <SidebarItem icon={FileText} label="Day Book" />
-                    <SidebarItem icon={BarChart3} label="Profit & Loss" active />
-                    <SidebarItem icon={FileText} label="Balance Sheet" />
-                    <SidebarItem icon={Package} label="Stock Summary" />
-                    <SidebarItem icon={Settings} label="Settings" />
-                </nav>
-            </aside>
+                {/* Analysis Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Gross Profit %</p>
+                        <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{grossProfitPercent}%</p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Net Profit %</p>
+                        <p className="text-3xl font-bold text-green-600 dark:text-green-400">{netProfitPercent}%</p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Revenue</p>
+                        <p className="text-3xl font-bold text-gray-900 dark:text-white">₹{(data.incomes.total / 100000).toFixed(1)}L</p>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Net Profit</p>
+                        <p className="text-3xl font-bold text-gray-900 dark:text-white">₹{(data.expenses.netProfit / 100000).toFixed(2)}L</p>
+                    </div>
+                </div>
 
-            {/* Main Container */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                {/* Additional Insights */}
+                <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+                    <div className="flex items-start gap-3">
+                        <PieChart className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">Financial Summary</h3>
+                            <p className="text-sm text-blue-800 dark:text-blue-200">
+                                Your business shows a net profit of ₹{(data.expenses.netProfit / 100000).toFixed(2)}L with a {netProfitPercent}% profit margin. 
+                                Total revenue stands at ₹{(data.incomes.total / 100000).toFixed(1)}L with gross profit at {grossProfitPercent}%.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const TableRow = ({ label, value, highlight, bold }) => (
+    <div className="flex justify-between items-center">
+        <span className={`text-sm ${bold ? 'font-bold text-gray-900 dark:text-white' : highlight ? 'font-semibold text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+            {label}
+        </span>
+        <span className={`text-sm font-semibold ${bold ? 'text-gray-900 dark:text-white' : highlight ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>
+            ₹{value.toLocaleString('en-IN')}
+        </span>
+    </div>
+);
+
+export default ProfitLoss;
                 {/* Header */}
                 <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
                     <div className="flex-1 max-w-xl">

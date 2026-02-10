@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { Plus, Search, Edit, Trash2, X, Phone, Mail, MapPin } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, Phone, Mail, MapPin, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api/axios';
 
@@ -118,6 +119,7 @@ const SupplierModal = ({ isOpen, onClose, supplier }) => {
 };
 
 const Suppliers = () => {
+    const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSupplier, setSelectedSupplier] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -160,7 +162,16 @@ const Suppliers = () => {
     return (
         <div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Suppliers</h1>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        title="Back to Dashboard"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                    </button>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Suppliers</h1>
+                </div>
                 <button
                     onClick={() => { setSelectedSupplier(null); setIsModalOpen(true); }}
                     className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"

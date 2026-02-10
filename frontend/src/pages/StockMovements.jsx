@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowUp, ArrowDown, Search } from 'lucide-react';
+import { ArrowUp, ArrowDown, Search, ArrowLeft, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
 const StockMovements = () => {
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('all');
 
@@ -54,8 +56,17 @@ const StockMovements = () => {
 
     return (
         <div>
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Stock Movements</h1>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        title="Back to Dashboard"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                    </button>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Stock Movements</h1>
+                </div>
             </div>
 
             {/* Statistics */}

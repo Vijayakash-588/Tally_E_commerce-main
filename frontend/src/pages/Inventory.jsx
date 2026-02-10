@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Download, Plus, ChevronDown, Filter, Loader, X } from 'lucide-react';
+import { Package, Search, Download, Plus, ChevronDown, Filter, Loader, X, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 
@@ -181,6 +182,7 @@ const ProductModal = ({ isOpen, onClose, onSuccess }) => {
 };
 
 const Inventory = () => {
+    const navigate = useNavigate();
     const [products, setProducts] = useState([]);
     const [stockItems, setStockItems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -235,9 +237,18 @@ const Inventory = () => {
             <div className="max-w-7xl mx-auto">
 
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Stock Inventory</h1>
-                    <p className="text-slate-600">Manage and monitor your product inventory</p>
+                <div className="mb-8 flex items-center gap-3">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="p-2 hover:bg-white rounded-lg transition-colors"
+                        title="Back to Dashboard"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-slate-600" />
+                    </button>
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900 mb-2">Stock Inventory</h1>
+                        <p className="text-slate-600">Manage and monitor your product inventory</p>
+                    </div>
                 </div>
 
                 {/* Search and Filters */}
