@@ -281,9 +281,9 @@ const Purchases = () => {
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
-                    <span className="text-blue-600 text-[10px] font-black uppercase tracking-[0.3em] mb-2 block">Inventory Management</span>
+                    <span className="text-blue-600 text-[10px] font-black uppercase tracking-[0.3em] mb-2 block">Purchase Management</span>
                     <h1 className="text-4xl font-black text-slate-900 tracking-tight">Purchase Vouchers</h1>
-                    <p className="text-slate-500 font-bold text-sm mt-2">Manage stock acquisition and supplier ledger entries.</p>
+                    <p className="text-slate-500 font-bold text-sm mt-2">Manage stock purchase details.</p>
                 </div>
                 <div className="flex items-center space-x-4">
                     <button className="flex items-center px-6 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm text-[10px] font-black text-slate-600 hover:bg-slate-50 transition-all uppercase tracking-widest">
@@ -298,46 +298,6 @@ const Purchases = () => {
                         Record Purchase
                     </button>
                 </div>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <StatCard
-                    title="Gross Purchases"
-                    amount={`₹${(stats.totalPurchases / 1000).toFixed(1)}K`}
-                    change={`${((stats.monthlyPurchases / stats.totalPurchases || 0) * 100).toFixed(1)}% MONTHLY`}
-                    changeType="positive"
-                    icon={Wallet}
-                    colorClass="bg-blue-600 text-blue-600"
-                    sparkColor="#2563EB"
-                />
-                <StatCard
-                    title="Active Vendors"
-                    amount={stats.vendorCount}
-                    change="Verified Suppliers"
-                    changeType="positive"
-                    icon={Landmark}
-                    colorClass="bg-red-600 text-red-600"
-                    sparkColor="#DC2626"
-                />
-                <StatCard
-                    title="Total Orders"
-                    amount={stats.activeOrders}
-                    change="Lifetime Entry"
-                    changeType="positive"
-                    icon={Package}
-                    colorClass="bg-amber-600 text-amber-600"
-                    sparkColor="#D97706"
-                />
-                <StatCard
-                    title="Monthly Spend"
-                    amount={`₹${(stats.monthlyPurchases / 1000).toFixed(1)}K`}
-                    change="Current Period"
-                    changeType="positive"
-                    icon={TrendingUp}
-                    colorClass="bg-emerald-600 text-emerald-600"
-                    sparkColor="#059669"
-                />
             </div>
 
             {/* Transaction Ledger Table */}
