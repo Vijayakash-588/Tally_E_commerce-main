@@ -417,39 +417,6 @@ const Inventory = () => {
                 </div>
             </div>
 
-            {/* Summary Insights */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm group hover:scale-[1.02] transition-all">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Master Items</p>
-                    <div className="flex items-end justify-between">
-                        <h2 className="text-5xl font-black text-slate-900 tracking-tighter">{products.length}</h2>
-                        <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:rotate-12 transition-transform">
-                            <Box className="w-6 h-6" />
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm group hover:scale-[1.02] transition-all">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Live Stock Units</p>
-                    <div className="flex items-end justify-between">
-                        <h2 className="text-5xl font-black text-emerald-600 tracking-tighter">
-                            {(products.reduce((sum, p) => sum + (p.opening_qty || 0), 0) / 1000).toFixed(1)}K
-                        </h2>
-                        <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:rotate-12 transition-transform">
-                            <TrendingUp className="w-6 h-6" />
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm group hover:scale-[1.02] transition-all">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Alerts & Notifications</p>
-                    <div className="flex items-end justify-between">
-                        <h2 className="text-5xl font-black text-rose-600 tracking-tighter">02</h2>
-                        <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 group-hover:rotate-12 transition-transform">
-                            <AlertCircle className="w-6 h-6" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {/* Add Product Modal */}
             <ProductModal
                 isOpen={isModalOpen}
