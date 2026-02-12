@@ -198,19 +198,6 @@ const DashboardLayout = () => {
                         </button>
 
                         <div className="h-8 w-px bg-slate-100 mx-1"></div>
-
-                        <div className="flex items-center space-x-3.5 pl-2">
-                            <div className="text-right hidden sm:block">
-                                <p className="text-xs font-black text-slate-900 leading-tight">{user?.name || 'Admin'}</p>
-                                <div className="flex items-center justify-end">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
-                                    <p className="text-[9px] font-black text-emerald-600 uppercase tracking-tighter">System Active</p>
-                                </div>
-                            </div>
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white ring-1 ring-slate-100">
-                                {user?.name?.substring(0, 2).toUpperCase() || 'JD'}
-                            </div>
-                        </div>
                     </div>
                 </header>
 

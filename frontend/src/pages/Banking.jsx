@@ -259,48 +259,6 @@ const Banking = () => {
                 </div>
             </div>
 
-            {/* Premium Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
-                        <Building2 className="w-20 h-20" />
-                    </div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Receivable</p>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tighter">₹{totalReceivable.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h2>
-                    <div className="flex items-center mt-4 text-[10px] font-black text-rose-500 bg-rose-50 w-fit px-3 py-1 rounded-full">
-                        <ArrowUpRight className="w-3 h-3 mr-1" /> O/S Balance
-                    </div>
-                </div>
-
-                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform duration-500">
-                        <Wallet className="w-20 h-20" />
-                    </div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Collected</p>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tighter">₹{totalCollected.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h2>
-                    <div className="flex items-center mt-4 text-[10px] font-black text-emerald-500 bg-emerald-50 w-fit px-3 py-1 rounded-full">
-                        <ArrowDownLeft className="w-3 h-3 mr-1" /> Net Inflow
-                    </div>
-                </div>
-
-                <div className="md:col-span-2 bg-slate-900 p-8 rounded-[2.5rem] shadow-xl shadow-slate-900/10 text-white flex items-center justify-between relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-8 opacity-10">
-                        <Hexagon className="w-32 h-32 text-blue-400 fill-blue-400" />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Liquid Assets Summary</p>
-                        <div className="flex items-baseline space-x-4">
-                            <h2 className="text-4xl font-black text-white tracking-tighter">₹{(totalCollected * 0.85).toLocaleString('en-IN', { minimumDigits: 0 })}</h2>
-                            <span className="text-blue-400 font-black text-sm tracking-tight hover:underline cursor-pointer">View Projections →</span>
-                        </div>
-                    </div>
-                    <div className="hidden lg:block text-right">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-2 text-right">Ledger Accuracy</p>
-                        <p className="text-3xl font-black text-blue-400 leading-none">99.8%</p>
-                    </div>
-                </div>
-            </div>
-
             {/* Main Ledger Section */}
             <div className="space-y-6">
                 {/* Tabs & Search */}

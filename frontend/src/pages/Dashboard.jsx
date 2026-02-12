@@ -238,46 +238,6 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <StatCard
-                    title="Gross Sales"
-                    amount={`₹${(stats.totalSales / 1000).toFixed(1)}K`}
-                    change={`${((stats.monthlySales / stats.totalSales || 0) * 100).toFixed(1)}% GROWTH`}
-                    changeType="positive"
-                    icon={Wallet}
-                    colorClass="bg-blue-600 text-blue-600"
-                    sparkColor="#2563EB"
-                />
-                <StatCard
-                    title="Total Liability"
-                    amount={`₹${(stats.totalPurchases / 1000).toFixed(1)}K`}
-                    change={`${((stats.monthlyPurchases / stats.totalPurchases || 0) * 100).toFixed(1)}% OUTSTANDING`}
-                    changeType={stats.monthlyPurchases > 0 ? "negative" : "positive"}
-                    icon={Landmark}
-                    colorClass="bg-red-600 text-red-600"
-                    sparkColor="#DC2626"
-                />
-                <StatCard
-                    title="Live Products"
-                    amount={stats.totalProducts}
-                    change={`${stats.activeProducts} OPERATIONAL`}
-                    changeType="positive"
-                    icon={Zap}
-                    colorClass="bg-amber-600 text-amber-600"
-                    sparkColor="#D97706"
-                />
-                <StatCard
-                    title="Period Revenue"
-                    amount={`₹${(stats.monthlySales / 1000).toFixed(1)}K`}
-                    change="+12.4% VS LAST MONTH"
-                    changeType="positive"
-                    icon={FileText}
-                    colorClass="bg-emerald-600 text-emerald-600"
-                    sparkColor="#059669"
-                />
-            </div>
-
             <div className="grid grid-cols-1 gap-10">
                 {/* Recent Activities Table - Now Full Width */}
                 <div className="w-full">
