@@ -27,9 +27,6 @@ function App() {
           <Route path="/register" element={<Register />} />
 
           <Route element={<ProtectedRoute />}>
-            <Route path="/active-stock" element={<StockSummary />} />
-            <Route path="/sales" element={<SalesInvoice />} />
-            <Route path="/reports/profit-loss" element={<ProfitLoss />} />
             <Route element={<DashboardLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/products" element={<Products />} />
@@ -41,6 +38,7 @@ function App() {
               <Route path="/stock-movements" element={<StockMovements />} />
               <Route path="/reports/profit-loss" element={<ProfitLoss />} />
               <Route path="/inventory" element={<StockSummary />} />
+              <Route path="/active-stock" element={<StockSummary />} />
             </Route>
           </Route>
 

@@ -278,88 +278,38 @@ const Dashboard = () => {
                 />
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-
-                {/* Gateway Menu (Vertical Style) */}
-                <div className="xl:col-span-4 flex flex-col">
-                    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 h-full">
-                        <div className="flex items-center justify-between mb-8 px-2">
-                            <h3 className="text-xl font-black text-slate-900 tracking-tight">Gateway Menu</h3>
-                            <div className="p-2 bg-slate-50 rounded-xl">
-                                <Filter className="w-4 h-4 text-slate-400" />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <GatewayItem
-                                title="Sales Voucher"
-                                subtitle="Record outbound invoices"
-                                icon={ShoppingCart}
-                                color="bg-gradient-to-br from-blue-500 to-indigo-600"
-                                to="/sales"
-                                shortcut="F8"
-                            />
-                            <GatewayItem
-                                title="Purchase Voucher"
-                                subtitle="Inbound stock entry"
-                                icon={ShoppingBag}
-                                color="bg-gradient-to-br from-indigo-500 to-purple-600"
-                                to="/purchases"
-                                shortcut="F9"
-                            />
-                            <GatewayItem
-                                title="Banking & Cash"
-                                subtitle="Manage ledgers & payments"
-                                icon={Landmark}
-                                color="bg-gradient-to-br from-cyan-500 to-blue-600"
-                                to="/banking"
-                                shortcut="F5"
-                            />
-                            <GatewayItem
-                                title="Stock Summary"
-                                subtitle="Current inventory levels"
-                                icon={Package}
-                                color="bg-gradient-to-br from-amber-500 to-orange-600"
-                                to="/inventory"
-                                shortcut="F10"
-                            />
-                        </div>
-
-                        <div className="mt-10 pt-8 border-t border-slate-50 px-4">
-                            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 group cursor-pointer">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Pro Tip</p>
-                                <p className="text-xs font-bold text-slate-600 leading-relaxed group-hover:text-slate-900 transition-colors">
-                                    Use the <span className="text-blue-600">Quick Search</span> (Alt+G) in the header to jump to any report or voucher instantly.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Recent Activities Table */}
-                <div className="xl:col-span-8">
-                    <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden h-full flex flex-col">
-                        <div className="p-8 pb-4 flex items-center justify-between">
+            <div className="grid grid-cols-1 gap-10">
+                {/* Recent Activities Table - Now Full Width */}
+                <div className="w-full">
+                    <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden h-full flex flex-col hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-500">
+                        <div className="p-10 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Recent Activity</h3>
-                                <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-tighter">Latest 8 entries across all vouchers</p>
+                                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Recent Activity</h3>
+                                <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-tighter">Real-time ledger entries and voucher history</p>
                             </div>
-                            <button className="px-5 py-2.5 bg-slate-50 text-slate-600 rounded-xl text-xs font-black uppercase hover:bg-slate-100 transition-all border border-slate-100">
-                                View Export
-                            </button>
+                            <div className="flex items-center space-x-3">
+                                <button className="px-6 py-3 bg-slate-50 text-slate-600 rounded-[1.25rem] text-xs font-black uppercase hover:bg-slate-100 transition-all border border-slate-100 flex items-center">
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Export Data
+                                </button>
+                                <button className="px-6 py-3 bg-blue-50 text-blue-600 rounded-[1.25rem] text-xs font-black uppercase hover:bg-blue-100 transition-all border border-blue-100">
+                                    View Analytics
+                                </button>
+                            </div>
                         </div>
 
                         <div className="overflow-x-auto flex-1">
                             <table className="min-w-full">
                                 <thead>
                                     <tr className="border-y border-slate-50 bg-slate-50/30">
-                                        <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Transaction Date</th>
-                                        <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Voucher Type</th>
-                                        <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Reference No.</th>
-                                        <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Counter Party</th>
-                                        <th className="px-8 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Voucher Amount</th>
+                                        <th className="px-10 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Transaction Date</th>
+                                        <th className="px-10 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Voucher Type</th>
+                                        <th className="px-10 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Reference No.</th>
+                                        <th className="px-10 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Counter Party</th>
+                                        <th className="px-10 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Voucher Amount</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-50">
+                                <tbody className="divide-y divide-slate-50 text-slate-800">
                                     {recentTransactions.length > 0 ? (
                                         recentTransactions.map((txn, idx) => (
                                             <TransactionRow
@@ -374,12 +324,13 @@ const Dashboard = () => {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="5" className="px-8 py-20 text-center">
+                                            <td colSpan="5" className="px-10 py-32 text-center">
                                                 <div className="flex flex-col items-center">
-                                                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4 text-slate-200">
-                                                        <FileText className="w-8 h-8" />
+                                                    <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 text-slate-200">
+                                                        <FileText className="w-10 h-10" />
                                                     </div>
-                                                    <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No entries found for this period</p>
+                                                    <p className="text-lg font-black text-slate-400 uppercase tracking-widest">No recent transactions</p>
+                                                    <p className="text-sm font-bold text-slate-300 mt-2">Any new vouchers will appear here automatically</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -388,14 +339,14 @@ const Dashboard = () => {
                             </table>
                         </div>
 
-                        <div className="p-6 border-t border-slate-50 bg-slate-50/20 text-center">
-                            <button className="text-blue-600 text-xs font-black uppercase tracking-widest hover:underline">
-                                View All Ledgers & Vouchers
+                        <div className="p-8 border-t border-slate-50 bg-slate-50/20 text-center">
+                            <button className="text-blue-600 text-sm font-black uppercase tracking-widest hover:underline flex items-center justify-center mx-auto">
+                                View Detailed Ledger Reports
+                                <ArrowRight className="w-4 h-4 ml-2" />
                             </button>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     );
