@@ -78,7 +78,7 @@ const DashboardLayout = () => {
                         </div>
                         <div>
                             <h1 className="text-lg font-black tracking-tight text-slate-900 leading-none">Gateway</h1>
-                            <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mt-0.5">Enterprise ERP</p>
+                            <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mt-0.5">ERP-Pro</p>
                         </div>
                     </div>
                 </div>
@@ -170,7 +170,7 @@ const DashboardLayout = () => {
                             <div className="p-2 bg-blue-50 rounded-lg mr-3 hidden sm:block">
                                 <LayoutDashboard className="w-4 h-4 text-blue-600" />
                             </div>
-                            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900">Console</h2>
+                            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900">Dashboard</h2>
                         </div>
 
                         {/* Centered Search Bar */}
