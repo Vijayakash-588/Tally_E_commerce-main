@@ -391,7 +391,7 @@ const Purchases = () => {
 
             {/* Premium Transaction Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4 overflow-y-auto">
                     <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-5xl border border-slate-100 animate-in fade-in zoom-in duration-300 max-h-[95vh] flex flex-col overflow-hidden">
                         <div className="p-10 pb-6 flex justify-between items-start border-b border-slate-50">
                             <div>

@@ -143,7 +143,7 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4 overflow-y-auto">
             <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-5xl my-auto border border-slate-100 animate-in fade-in zoom-in duration-300">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-10 border-b border-slate-50">

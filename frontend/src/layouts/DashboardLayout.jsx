@@ -206,7 +206,7 @@ const DashboardLayout = () => {
                     {/* Subtle Grid Pattern Overlay */}
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none" />
 
-                    <div className="relative z-10 max-w-7xl mx-auto">
+                    <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>
                 </main>
