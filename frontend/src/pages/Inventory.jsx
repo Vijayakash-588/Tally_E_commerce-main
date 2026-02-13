@@ -30,8 +30,7 @@ const ProductModal = ({ isOpen, onClose, onSuccess }) => {
         group: '',
         category: '',
         unit: 'Pcs',
-        opening_qty: 0,
-        description: ''
+        opening_qty: 0
     });
     const [submitting, setSubmitting] = useState(false);
 
@@ -52,16 +51,16 @@ const ProductModal = ({ isOpen, onClose, onSuccess }) => {
 
         try {
             setSubmitting(true);
-            await api.post('/products', { ...formData, is_active: true, price: 0 });
+            await api.post('/products', { ...formData, is_active: true });
             toast.success('Product added successfully!');
             setFormData({
                 name: '',
                 sku: '',
                 group: '',
                 category: '',
+                category: '',
                 unit: 'Pcs',
-                opening_qty: 0,
-                description: ''
+                opening_qty: 0
             });
             onClose();
             onSuccess();
@@ -171,8 +170,6 @@ const ProductModal = ({ isOpen, onClose, onSuccess }) => {
                         </div>
                     </div>
 
-// Description field removed as it is not supported by the backend schema
-
                     <div className="flex gap-4 pt-6">
                         <button
                             type="button"
@@ -219,7 +216,7 @@ const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass, s
 const Inventory = () => {
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
-    const [stockItems, setStockItems] = useState([]);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -233,14 +230,9 @@ const Inventory = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [productsRes, stockRes] = await Promise.all([
-                api.get('/products'),
-                api.get('/stock_items')
-            ]);
+            const productsRes = await api.get('/products');
             const productsData = Array.isArray(productsRes.data) ? productsRes.data : (productsRes.data?.data || []);
-            const stockData = Array.isArray(stockRes.data) ? stockRes.data : (stockRes.data?.data || []);
             setProducts(productsData);
-            setStockItems(stockData);
             setError(null);
         } catch (err) {
             console.error('Error fetching inventory:', err);
