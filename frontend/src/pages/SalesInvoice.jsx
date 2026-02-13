@@ -254,6 +254,13 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
                                                                 <option key={p.id} value={p.id}>{p.name}</option>
                                                             ))}
                                                         </select>
+                                                        <input
+                                                            type="text"
+                                                            value={item.description || ''}
+                                                            onChange={(e) => handleItemChange(idx, 'description', e.target.value)}
+                                                            placeholder="Item Description"
+                                                            className="w-full mt-2 p-2 bg-transparent border-b border-slate-200 text-xs font-bold text-slate-500 focus:border-blue-400 outline-none"
+                                                        />
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <input

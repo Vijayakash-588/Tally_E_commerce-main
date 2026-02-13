@@ -171,19 +171,7 @@ const ProductModal = ({ isOpen, onClose, onSuccess }) => {
                         </div>
                     </div>
 
-                    <div className="group">
-                        <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
-                            Additional Comments
-                        </label>
-                        <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            placeholder="Enter detailed specifications or storage instructions..."
-                            rows="3"
-                            className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900"
-                        />
-                    </div>
+// Description field removed as it is not supported by the backend schema
 
                     <div className="flex gap-4 pt-6">
                         <button

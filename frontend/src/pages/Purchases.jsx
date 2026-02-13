@@ -211,7 +211,7 @@ const Purchases = () => {
         setItems(newItems);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!formData.supplier_id) {
             toast.error('Please select a supplier');
             return;
@@ -221,27 +221,27 @@ const Purchases = () => {
             return;
         }
 
-        const totals = recalcTotals(items);
-        const payload = {
-            supplier_id: parseInt(formData.supplier_id),
-            reference: formData.reference,
-            notes: formData.notes,
-            subtotal: totals.subtotal,
-            tax_amount: totals.tax,
-            total: totals.total,
-            items: items.map(item => ({
-                product_id: item.product_id,
-                quantity: item.quantity,
-                price: item.price,
-                tax_rate_id: item.tax_rate_id || null,
-                tax_amount: item.tax_amount || 0
-            }))
-        };
+        try {
+            const promises = items.map(item => {
+                const itemTotal = (item.price * item.quantity) + (item.tax_amount || 0);
+                const payload = {
+                    supplier_id: parseInt(formData.supplier_id),
+                    product_id: parseInt(item.product_id),
+                    quantity: parseFloat(item.quantity),
+                    unit_price: parseFloat(item.price), // Backend expects unit_price
+                    total: itemTotal
+                };
+                // We use createMutation.mutationFn directly or axios
+                return api.post('/purchases', payload);
+            });
 
-        if (editingPurchase) {
-            updateMutation.mutate(payload);
-        } else {
-            createMutation.mutate(payload);
+            await Promise.all(promises);
+            queryClient.invalidateQueries(['purchases']);
+            toast.success('Purchases recorded successfully');
+            resetForm();
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to record some purchases');
         }
     };
 
@@ -360,21 +360,22 @@ const Purchases = () => {
                     <table className="min-w-full">
                         <thead>
                             <tr className="bg-slate-50/50 border-b border-slate-100">
-                                <th className="px-10 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Reference / ID</th>
+                                <th className="px-10 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Date / ID</th>
                                 <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Supplier Details</th>
-                                <th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Items Count</th>
-                                <th className="px-10 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount (DR)</th>
+                                <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Product</th>
+                                <th className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty</th>
+                                <th className="px-10 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Amount</th>
                                 <th className="px-10 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="5" className="px-10 py-20 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest animate-pulse">Syncing Ledgers...</td>
+                                    <td colSpan="6" className="px-10 py-20 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest animate-pulse">Syncing Ledgers...</td>
                                 </tr>
                             ) : purchases.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-10 py-32 text-center">
+                                    <td colSpan="6" className="px-10 py-32 text-center">
                                         <div className="opacity-20 flex flex-col items-center">
                                             <Package className="w-12 h-12 mb-4" />
                                             <p className="font-black uppercase tracking-widest text-[10px]">No purchase records found</p>
@@ -382,47 +383,51 @@ const Purchases = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                purchases.map((purchase) => (
-                                    <tr key={purchase.id} className="group hover:bg-slate-50/80 transition-all cursor-default">
-                                        <td className="px-10 py-6 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="w-2 h-2 rounded-full bg-blue-600 mr-4" />
-                                                <span className="text-sm font-black text-slate-900 tracking-tight">{purchase.reference}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6 whitespace-nowrap">
-                                            <p className="text-sm font-black text-slate-900 tracking-tight">
-                                                {suppliers.find(s => s.id === purchase.supplier_id)?.name || 'Unknown Supplier'}
-                                            </p>
-                                            <p className="text-[10px] font-bold text-slate-400 tracking-tight">Voucher Entry</p>
-                                        </td>
-                                        <td className="px-8 py-6 text-center whitespace-nowrap">
-                                            <span className="bg-slate-100 text-slate-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
-                                                {purchase.items?.length || 0} Items
-                                            </span>
-                                        </td>
-                                        <td className="px-10 py-6 text-right whitespace-nowrap">
-                                            <p className="text-lg font-black text-slate-900 tracking-tighter">₹{purchase.total?.toFixed(2) || '0.00'}</p>
-                                            <p className="text-[10px] font-black text-rose-500 uppercase leading-none">Debit</p>
-                                        </td>
-                                        <td className="px-10 py-6 text-right space-x-3">
-                                            <button
-                                                onClick={() => handleEdit(purchase)}
-                                                className="p-2 text-slate-300 hover:text-blue-600 hover:bg-white hover:shadow-md rounded-xl transition-all"
-                                                title="Edit Voucher"
-                                            >
-                                                <History className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(purchase.id)}
-                                                className="p-2 text-slate-300 hover:text-red-600 hover:bg-white hover:shadow-md rounded-xl transition-all"
-                                                title="Delete Voucher"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                                purchases.map((purchase) => {
+                                    const productName = products.find(p => p.id === purchase.product_id)?.name || 'Unknown Item';
+                                    const supplierName = suppliers.find(s => s.id === purchase.supplier_id)?.name || 'Unknown Supplier';
+                                    return (
+                                        <tr key={purchase.id} className="group hover:bg-slate-50/80 transition-all cursor-default">
+                                            <td className="px-10 py-6 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <div className="w-2 h-2 rounded-full bg-blue-600 mr-4" />
+                                                    <div>
+                                                        <span className="text-sm font-black text-slate-900 tracking-tight block">
+                                                            {new Date(purchase.created_at || Date.now()).toLocaleDateString()}
+                                                        </span>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                                            ID: {purchase.id.slice(0, 8)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 whitespace-nowrap">
+                                                <p className="text-sm font-black text-slate-900 tracking-tight">{supplierName}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 tracking-tight">Direct Purchase</p>
+                                            </td>
+                                            <td className="px-8 py-6 whitespace-nowrap">
+                                                <p className="text-sm font-black text-slate-700 tracking-tight">{productName}</p>
+                                            </td>
+                                            <td className="px-8 py-6 text-center whitespace-nowrap">
+                                                <span className="bg-slate-100 text-slate-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter">
+                                                    {purchase.quantity} Units
+                                                </span>
+                                            </td>
+                                            <td className="px-10 py-6 text-right whitespace-nowrap">
+                                                <p className="text-lg font-black text-slate-900 tracking-tighter">₹{parseFloat(purchase.total || 0).toFixed(2)}</p>
+                                            </td>
+                                            <td className="px-10 py-6 text-right space-x-3">
+                                                <button
+                                                    onClick={() => handleDelete(purchase.id)}
+                                                    className="p-2 text-slate-300 hover:text-red-600 hover:bg-white hover:shadow-md rounded-xl transition-all"
+                                                    title="Delete Purchase"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
@@ -444,7 +449,7 @@ const Purchases = () => {
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-10 pt-6 space-y-10">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 gap-8">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Supplier Ledger</label>
                                     <select
@@ -457,16 +462,6 @@ const Purchases = () => {
                                             <option key={s.id} value={s.id}>{s.name}</option>
                                         ))}
                                     </select>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Reference Number</label>
-                                    <input
-                                        type="text"
-                                        value={formData.reference}
-                                        onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                                        placeholder="Voucher or PO ID"
-                                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all font-black text-slate-900"
-                                    />
                                 </div>
                             </div>
 
@@ -556,15 +551,13 @@ const Purchases = () => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                                <div className="md:col-span-2 space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Narration / Internal Notes</label>
-                                    <textarea
-                                        value={formData.notes}
-                                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                        rows="4"
-                                        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-[2rem] focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all font-bold text-slate-900 resize-none shadow-inner"
-                                        placeholder="Add transaction narrative..."
-                                    />
+                                <div className="md:col-span-2 space-y-2 flex items-center justify-center">
+                                    <div className="text-center opacity-40">
+                                        <FileText className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                            Items will be recorded as individual purchase entries
+                                        </p>
+                                    </div>
                                 </div>
                                 <div className="bg-slate-900 rounded-[2rem] p-8 text-white flex flex-col justify-between shadow-xl shadow-slate-900/10">
                                     <div className="space-y-4">
@@ -580,7 +573,7 @@ const Purchases = () => {
                                     <div className="border-t border-slate-800 pt-6 mt-6">
                                         <div className="flex justify-between items-end">
                                             <div>
-                                                <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1">TOTAL VOUCHER AMOUNT</p>
+                                                <p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] mb-1">TOTAL PAYABLE</p>
                                                 <p className="text-3xl font-black tracking-tighter">₹{totals.total.toFixed(2)}</p>
                                             </div>
                                         </div>
