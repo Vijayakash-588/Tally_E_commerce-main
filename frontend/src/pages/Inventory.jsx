@@ -58,7 +58,6 @@ const ProductModal = ({ isOpen, onClose, onSuccess }) => {
                 sku: '',
                 group: '',
                 category: '',
-                category: '',
                 unit: 'Pcs',
                 opening_qty: 0
             });

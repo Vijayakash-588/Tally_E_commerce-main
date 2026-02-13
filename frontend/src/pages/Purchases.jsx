@@ -82,8 +82,6 @@ const Purchases = () => {
     const [editingPurchase, setEditingPurchase] = useState(null);
     const [formData, setFormData] = useState({
         supplier_id: '',
-        reference: '',
-        notes: '',
         items: []
     });
     const [items, setItems] = useState([]);
@@ -248,9 +246,7 @@ const Purchases = () => {
     const handleEdit = (purchase) => {
         setEditingPurchase(purchase);
         setFormData({
-            supplier_id: purchase.supplier_id || '',
-            reference: purchase.reference || '',
-            notes: purchase.notes || ''
+            supplier_id: purchase.supplier_id || ''
         });
         setItems(purchase.items || []);
         setIsModalOpen(true);
@@ -263,7 +259,7 @@ const Purchases = () => {
     };
 
     const resetForm = () => {
-        setFormData({ supplier_id: '', reference: '', notes: '', items: [] });
+        setFormData({ supplier_id: '', items: [] });
         setItems([]);
         setEditingPurchase(null);
         setIsModalOpen(false);
@@ -351,7 +347,7 @@ const Purchases = () => {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                             type="text"
-                            placeholder="Search by reference or supplier..."
+                            placeholder="Search by supplier..."
                             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-300 outline-none transition-all font-bold text-xs"
                         />
                     </div>
