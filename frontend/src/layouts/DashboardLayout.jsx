@@ -126,7 +126,6 @@ const DashboardLayout = () => {
                         <div className="h-px bg-slate-100 my-4 mx-3"></div>
 
                         <SidebarItem to="/reports/profit-loss" icon={BarChart3}>Advanced Reports</SidebarItem>
-                        <SidebarItem to="/settings" icon={Settings}>System Settings</SidebarItem>
                     </nav>
                 </div>
 

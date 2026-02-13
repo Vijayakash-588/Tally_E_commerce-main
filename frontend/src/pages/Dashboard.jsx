@@ -238,6 +238,46 @@ const Dashboard = () => {
                 </div>
             </div>
 
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard
+                    title="Total Revenue"
+                    amount={`₹${stats.totalSales.toLocaleString('en-IN')}`}
+                    change="+12.5%"
+                    changeType="positive"
+                    icon={Wallet}
+                    colorClass="bg-blue-500 text-blue-600"
+                    sparkColor="#3b82f6"
+                />
+                <StatCard
+                    title="Total Expenses"
+                    amount={`₹${stats.totalPurchases.toLocaleString('en-IN')}`}
+                    change="+8.2%"
+                    changeType="negative"
+                    icon={TrendingDown}
+                    colorClass="bg-rose-500 text-rose-600"
+                    sparkColor="#f43f5e"
+                />
+                <StatCard
+                    title="Net Profit (Approx)"
+                    amount={`₹${(stats.totalSales - stats.totalPurchases).toLocaleString('en-IN')}`}
+                    change="+24.5%"
+                    changeType="positive"
+                    icon={Landmark}
+                    colorClass="bg-emerald-500 text-emerald-600"
+                    sparkColor="#10b981"
+                />
+                <StatCard
+                    title="Active Products"
+                    amount={stats.activeProducts}
+                    change="+5"
+                    changeType="positive"
+                    icon={Package}
+                    colorClass="bg-violet-500 text-violet-600"
+                    sparkColor="#8b5cf6"
+                />
+            </div>
+
             <div className="grid grid-cols-1 gap-10">
                 {/* Recent Activities Table - Now Full Width */}
                 <div className="w-full">

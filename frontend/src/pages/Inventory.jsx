@@ -207,6 +207,27 @@ const ProductModal = ({ isOpen, onClose, onSuccess }) => {
     );
 };
 
+const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass, sparkColor }) => (
+    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group">
+        <div className="flex justify-between items-start">
+            <div className={clsx("p-4 rounded-2xl bg-opacity-10 group-hover:scale-110 transition-transform duration-500", colorClass)}>
+                <Icon className={clsx("w-6 h-6", colorClass.replace('bg-', 'text-'))} />
+            </div>
+        </div>
+        <div className="mt-6">
+            <h3 className="text-slate-400 text-xs font-black uppercase tracking-widest">{title}</h3>
+            <h2 className="text-3xl font-black text-slate-900 mt-1 tracking-tight">{amount}</h2>
+            <div className={clsx(
+                "flex items-center mt-3 text-[11px] font-black uppercase tracking-tighter px-2.5 py-1 rounded-full w-fit",
+                changeType === 'positive' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
+            )}>
+                {changeType === 'positive' ? <TrendingUp className="w-3.5 h-3.5 mr-1" /> : <AlertCircle className="w-3.5 h-3.5 mr-1" />}
+                {change}
+            </div>
+        </div>
+    </div>
+);
+
 const Inventory = () => {
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
@@ -252,6 +273,12 @@ const Inventory = () => {
 
     const groups = ['All', ...new Set(products.filter(p => p.group).map(p => p.group))];
 
+    // Stats Calculations
+    const totalItems = products.length;
+    const lowStockItems = products.filter(p => (p.opening_qty || 0) < 10).length;
+    const outOfStockItems = products.filter(p => (p.opening_qty || 0) === 0).length;
+    const activeCategories = groups.length - 1; // Exclude 'All'
+
     if (loading) {
         return (
             <div className="flex flex-col justify-center items-center h-[60vh] space-y-4">
@@ -271,7 +298,9 @@ const Inventory = () => {
                     <h1 className="text-4xl font-black text-slate-900 tracking-tight">Stock Summary</h1>
                     <div className="flex items-center space-x-3 mt-3">
                         <div className="bg-emerald-50 text-emerald-600 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase border border-emerald-100">Live Status</div>
-                        <div className="bg-slate-50 text-slate-500 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase border border-slate-100">Updated: Dec 2024</div>
+                        <div className="bg-slate-50 text-slate-500 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase border border-slate-100">
+                            Updated: {new Date().toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                        </div>
                     </div>
                 </div>
                 <div className="flex items-center space-x-3">
@@ -287,6 +316,42 @@ const Inventory = () => {
                         Create Item
                     </button>
                 </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard
+                    title="Total Items"
+                    amount={totalItems}
+                    change="Registered"
+                    changeType="positive"
+                    icon={Package}
+                    colorClass="bg-blue-500 text-blue-600"
+                />
+                <StatCard
+                    title="Low Stock Alert"
+                    amount={lowStockItems}
+                    change="Reorder Soon"
+                    changeType="negative"
+                    icon={AlertCircle}
+                    colorClass="bg-orange-500 text-orange-600"
+                />
+                <StatCard
+                    title="Out of Stock"
+                    amount={outOfStockItems}
+                    change="Critical"
+                    changeType="negative"
+                    icon={Box}
+                    colorClass="bg-rose-500 text-rose-600"
+                />
+                <StatCard
+                    title="Stock Groups"
+                    amount={activeCategories}
+                    change="Categories"
+                    changeType="positive"
+                    icon={Layers}
+                    colorClass="bg-violet-500 text-violet-600"
+                />
             </div>
 
             {/* Advanced Filters */}

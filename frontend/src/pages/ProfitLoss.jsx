@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
     TrendingUp,
     ArrowLeft,
@@ -10,34 +11,97 @@ import {
     Search,
     Bell,
     PlusCircle,
-    ChevronDown
+    ChevronDown,
+    Filter
 } from 'lucide-react';
+import api from '../api/axios';
 
 const ProfitLoss = () => {
     const navigate = useNavigate();
 
-    // Sample P&L data
-    const data = {
-        period: '1-Apr-2023 to 31-Mar-2024',
-        expenses: {
-            openingStock: 45000,
-            purchases: 1250500,
-            directExpenses: 85200,
-            grossProfit: 584300,
-            indirectExpenses: 112000,
-            netProfit: 494300
-        },
-        incomes: {
-            sales: 1890000,
-            directIncomes: 12500,
-            closingStock: 62500,
-            indirectIncomes: 22000,
-            total: 1965000
+    const { data: sales = [] } = useQuery({
+        queryKey: ['sales'],
+        queryFn: async () => {
+            const res = await api.get('/sales');
+            return Array.isArray(res.data) ? res.data : (res.data?.data || []);
         }
-    };
+    });
 
-    const grossProfitPercent = ((data.expenses.grossProfit / data.incomes.sales) * 100).toFixed(1);
-    const netProfitPercent = ((data.expenses.netProfit / data.incomes.total) * 100).toFixed(1);
+    const { data: purchases = [] } = useQuery({
+        queryKey: ['purchases'],
+        queryFn: async () => {
+            const res = await api.get('/purchases');
+            return Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        }
+    });
+
+    const { data: products = [] } = useQuery({
+        queryKey: ['products'],
+        queryFn: async () => {
+            const res = await api.get('/products');
+            return Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        }
+    });
+
+    const { data: stockItems = [] } = useQuery({
+        queryKey: ['stock_items'],
+        queryFn: async () => {
+            const res = await api.get('/stock_items');
+            return Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        }
+    });
+
+    const financials = useMemo(() => {
+        // Calculate Totals
+        const totalSales = sales.reduce((sum, s) => sum + (parseFloat(s.total) || 0), 0);
+        const totalPurchases = purchases.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0);
+
+        // Calculate Stock Values
+        let openingStockValue = 0;
+        let closingStockValue = 0;
+
+        products.forEach(product => {
+            const price = parseFloat(product.unit_price) || 0;
+            const openingQty = parseInt(product.opening_qty) || 0;
+
+            // Opening Value
+            openingStockValue += openingQty * price;
+
+            // Current (Closing) Qty Calculation
+            const productMovements = stockItems.filter(item => item.product_id === product.id);
+            const inbound = productMovements.filter(m => m.type === 'IN').reduce((sum, m) => sum + m.quantity, 0);
+            const outbound = productMovements.filter(m => m.type === 'OUT').reduce((sum, m) => sum + m.quantity, 0);
+
+            const closingQty = openingQty + inbound - outbound;
+            closingStockValue += closingQty * price;
+        });
+
+        // Profit Calculations
+        const directExpenses = 0; // Placeholder for now
+        const directIncomes = 0; // Placeholder for now
+        const indirectExpenses = 0; // Placeholder
+        const indirectIncomes = 0; // Placeholder
+
+        const totalExpensesSide = openingStockValue + totalPurchases + directExpenses;
+        const totalIncomesSide = totalSales + directIncomes + closingStockValue;
+
+        const grossProfit = totalIncomesSide - totalExpensesSide;
+        const netProfit = grossProfit + indirectIncomes - indirectExpenses;
+
+        return {
+            period: 'Current Direct Period',
+            openingStock: openingStockValue,
+            purchases: totalPurchases,
+            sales: totalSales,
+            closingStock: closingStockValue,
+            grossProfit,
+            netProfit,
+            total: totalIncomesSide > totalExpensesSide ? totalIncomesSide : totalExpensesSide
+        };
+    }, [sales, purchases, products, stockItems]);
+
+    const grossProfitPercent = financials.sales ? ((financials.grossProfit / financials.sales) * 100).toFixed(1) : '0.0';
+    const netProfitPercent = financials.sales ? ((financials.netProfit / financials.sales) * 100).toFixed(1) : '0.0';
 
     return (
         <div className="flex h-screen bg-[#F8FAFC]">
@@ -53,24 +117,10 @@ const ProfitLoss = () => {
                         >
                             <ArrowLeft className="w-5 h-5" />
                         </button>
-                        <div className="relative group flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#2563EB] transition-colors" />
-                            <input
-                                type="text"
-                                placeholder="Search reports or ledgers..."
-                                className="w-full bg-slate-50 border-none rounded-lg py-2.5 pl-10 pr-4 text-sm focus:ring-2 focus:ring-[#2563EB]/20 transition-all outline-none"
-                            />
-                        </div>
+                        <h1 className="text-xl font-bold text-slate-800">Reports</h1>
                     </div>
 
                     <div className="flex items-center space-x-5">
-                        <button className="p-2 text-slate-400 hover:text-slate-600 relative">
-                            <Bell className="w-5 h-5" />
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 border border-white rounded-full"></span>
-                        </button>
-
-                        <div className="h-8 w-px bg-slate-200" />
-
                         <div className="w-9 h-9 rounded-full bg-[#DBEAFE] text-[#2563EB] flex items-center justify-center font-bold border border-white shadow-sm cursor-pointer">
                             JD
                         </div>
@@ -85,7 +135,7 @@ const ProfitLoss = () => {
                             <h2 className="text-3xl font-black text-slate-900 tracking-tight">Profit & Loss Statement</h2>
                             <div className="flex items-center text-sm font-bold text-slate-400 mt-2 space-x-2">
                                 <Calendar className="w-4 h-4" />
-                                <span>{data.period}</span>
+                                <span>{financials.period}</span>
                             </div>
                         </div>
                         <div className="flex items-center space-x-3">
@@ -100,19 +150,6 @@ const ProfitLoss = () => {
                         </div>
                     </div>
 
-                    {/* Filters & Controls */}
-                    <div className="flex justify-between items-center mb-8">
-                        <div className="flex items-center space-x-4">
-                            <FilterDropdown label="Period" value="Current FY" />
-                            <FilterDropdown label="Unit" value="Main Branch" />
-                            <FilterDropdown label="Method" value="Accrual" />
-                        </div>
-                        <div className="flex items-center space-x-1 p-1 bg-slate-100 rounded-xl border border-slate-200/50">
-                            <button className="px-5 py-2 text-xs font-black uppercase tracking-widest rounded-lg bg-white shadow-sm text-[#2563EB]">T-Shape</button>
-                            <button className="px-5 py-2 text-xs font-black uppercase tracking-widest rounded-lg text-slate-400 hover:text-slate-600">Vertical</button>
-                        </div>
-                    </div>
-
                     {/* T-Shape P&L Container */}
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden flex divide-x divide-slate-100 min-h-[600px]">
                         {/* EXPENSES SIDE */}
@@ -122,27 +159,22 @@ const ProfitLoss = () => {
                                 <span>Amount (₹)</span>
                             </div>
                             <div className="flex-1 p-4 space-y-1">
-                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Opening Stock" value={data.expenses.openingStock.toLocaleString('en-IN')} />
-                                <TableRow label="Purchases Accounts" value={data.expenses.purchases.toLocaleString('en-IN')} />
-                                <TableRow label="Direct Expenses" value={data.expenses.directExpenses.toLocaleString('en-IN')} />
+                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Opening Stock" value={financials.openingStock.toLocaleString('en-IN', { minimumFractionDigits: 2 })} />
+                                <TableRow label="Purchases Accounts" value={financials.purchases.toLocaleString('en-IN', { minimumFractionDigits: 2 })} />
+                                <TableRow label="Direct Expenses" value="0.00" />
 
                                 <div className="pt-2 pb-1">
-                                    <TableRow label="Gross Profit c/o" value={data.expenses.grossProfit.toLocaleString('en-IN')} blue />
+                                    <TableRow label="Gross Profit c/o" value={financials.grossProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })} blue />
                                 </div>
 
                                 <div className="h-px bg-slate-50 my-2 mx-4" />
 
-                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Indirect Expenses" value={data.expenses.indirectExpenses.toLocaleString('en-IN')} />
-                                <div className="pl-8 space-y-1 opacity-60 italic text-xs font-medium">
-                                    <TableRow label="Salaries & Wages" value="65,000" simple />
-                                    <TableRow label="Rent & Taxes" value="22,000" simple />
-                                    <TableRow label="Marketing" value="25,000" simple />
-                                </div>
+                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Indirect Expenses" value="0.00" />
                             </div>
                             <div className="px-8 py-8 border-t border-slate-100">
                                 <div className="flex justify-between items-end border-t-2 border-[#2563EB] pt-4">
                                     <span className="text-xl font-black text-slate-900 tracking-tight">Net Profit</span>
-                                    <span className="text-2xl font-black text-slate-900 tracking-tight">{data.expenses.netProfit.toLocaleString('en-IN')}</span>
+                                    <span className="text-2xl font-black text-slate-900 tracking-tight">{financials.netProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                 </div>
                             </div>
                         </div>
@@ -154,26 +186,24 @@ const ProfitLoss = () => {
                                 <span>Amount (₹)</span>
                             </div>
                             <div className="flex-1 p-4 space-y-1">
-                                <TableRow label="Sales Accounts" value={data.incomes.sales.toLocaleString('en-IN')} />
-                                <TableRow label="Direct Incomes" value={data.incomes.directIncomes.toLocaleString('en-IN')} />
-                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Closing Stock" value={data.incomes.closingStock.toLocaleString('en-IN')} />
+                                <TableRow label="Sales Accounts" value={financials.sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })} />
+                                <TableRow label="Direct Incomes" value="0.00" />
+                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Closing Stock" value={financials.closingStock.toLocaleString('en-IN', { minimumFractionDigits: 2 })} />
 
                                 <div className="h-px bg-slate-50 my-4 mx-4" />
 
-                                <TableRow label="Gross Profit b/f" value={data.expenses.grossProfit.toLocaleString('en-IN')} isBold />
+                                <TableRow label="Gross Profit b/f" value={financials.grossProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })} isBold />
 
                                 <div className="pt-2">
-                                    <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Indirect Incomes" value={data.incomes.indirectIncomes.toLocaleString('en-IN')} />
-                                    <div className="pl-8 space-y-1 opacity-60 italic text-xs font-medium">
-                                        <TableRow label="Interest Received" value="18,500" simple />
-                                        <TableRow label="Commission" value="3,500" simple />
-                                    </div>
+                                    <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Indirect Incomes" value="0.00" />
                                 </div>
                             </div>
                             <div className="px-8 py-8 bg-slate-50/30 border-t border-slate-100">
                                 <div className="flex justify-between items-end pt-4 border-t-2 border-slate-100">
                                     <span className="text-xl font-black text-slate-900 tracking-tight">Total:</span>
-                                    <span className="text-2xl font-black text-slate-900 tracking-tight underline decoration-[#2563EB] decoration-4 underline-offset-8">{data.incomes.total.toLocaleString('en-IN')}</span>
+                                    <span className="text-2xl font-black text-slate-900 tracking-tight underline decoration-[#2563EB] decoration-4 underline-offset-8">
+                                        {(financials.grossProfit + financials.openingStock + financials.purchases).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -184,12 +214,8 @@ const ProfitLoss = () => {
                         <div className="grid grid-cols-3 gap-8 flex-1 mr-12">
                             <SummaryCard label="Gross Profit %" value={`${grossProfitPercent}%`} />
                             <SummaryCard label="Net Profit %" value={`${netProfitPercent}%`} />
-                            <SummaryCard label="Operating Ratio" value="0.68" />
+                            <SummaryCard label="Operating Ratio" value="-" />
                         </div>
-                        <button className="bg-[#EBF3FF] text-[#2563EB] px-8 py-4 rounded-2xl font-black text-sm flex items-center space-x-3 hover:bg-blue-100 transition-all border border-blue-100 shadow-sm">
-                            <PieChart className="w-5 h-5" />
-                            <span>Detailed Analysis View</span>
-                        </button>
                     </div>
                 </main>
             </div>

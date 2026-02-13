@@ -186,6 +186,27 @@ const PaymentVoucherModal = ({ isOpen, onClose, selectedInvoice, unpaidInvoices 
     );
 };
 
+const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass, sparkColor }) => (
+    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group">
+        <div className="flex justify-between items-start">
+            <div className={clsx("p-4 rounded-2xl bg-opacity-10 group-hover:scale-110 transition-transform duration-500", colorClass)}>
+                <Icon className={clsx("w-6 h-6", colorClass.replace('bg-', 'text-'))} />
+            </div>
+        </div>
+        <div className="mt-6">
+            <h3 className="text-slate-400 text-xs font-black uppercase tracking-widest">{title}</h3>
+            <h2 className="text-3xl font-black text-slate-900 mt-1 tracking-tight">{amount}</h2>
+            <div className={clsx(
+                "flex items-center mt-3 text-[11px] font-black uppercase tracking-tighter px-2.5 py-1 rounded-full w-fit",
+                changeType === 'positive' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
+            )}>
+                {changeType === 'positive' ? <ArrowUpRight className="w-3.5 h-3.5 mr-1" /> : <ArrowDownLeft className="w-3.5 h-3.5 mr-1" />}
+                {change}
+            </div>
+        </div>
+    </div>
+);
+
 const Banking = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('bank'); // 'bank' or 'cash'
@@ -257,6 +278,42 @@ const Banking = () => {
                         Record Entry
                     </button>
                 </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard
+                    title="Total Receivable"
+                    amount={`₹${totalReceivable.toLocaleString('en-IN')}`}
+                    change="Outstanding"
+                    changeType="negative"
+                    icon={Wallet}
+                    colorClass="bg-blue-500 text-blue-600"
+                />
+                <StatCard
+                    title="Total Collected"
+                    amount={`₹${totalCollected.toLocaleString('en-IN')}`}
+                    change="Received"
+                    changeType="positive"
+                    icon={Building2}
+                    colorClass="bg-emerald-500 text-emerald-600"
+                />
+                <StatCard
+                    title="Pending Vouchers"
+                    amount={unpaidInvoices.length}
+                    change="To Collect"
+                    changeType="negative"
+                    icon={FileText}
+                    colorClass="bg-orange-500 text-orange-600"
+                />
+                <StatCard
+                    title="Cash Position"
+                    amount="₹0.00"
+                    change="In Hand"
+                    changeType="positive"
+                    icon={Wallet}
+                    colorClass="bg-violet-500 text-violet-600"
+                />
             </div>
 
             {/* Main Ledger Section */}

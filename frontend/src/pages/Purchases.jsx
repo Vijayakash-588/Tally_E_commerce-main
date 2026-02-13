@@ -300,6 +300,46 @@ const Purchases = () => {
                 </div>
             </div>
 
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard
+                    title="Total Purchases"
+                    amount={`₹${stats.totalPurchases.toLocaleString('en-IN')}`}
+                    change="+12.5%"
+                    changeType="positive"
+                    icon={Wallet}
+                    colorClass="bg-blue-500 text-blue-600"
+                    sparkColor="#3b82f6"
+                />
+                <StatCard
+                    title="Monthly Purchases"
+                    amount={`₹${stats.monthlyPurchases.toLocaleString('en-IN')}`}
+                    change="+8.2%"
+                    changeType="positive"
+                    icon={TrendingUp}
+                    colorClass="bg-emerald-500 text-emerald-600"
+                    sparkColor="#10b981"
+                />
+                <StatCard
+                    title="Active Vendors"
+                    amount={stats.vendorCount}
+                    change="+2"
+                    changeType="positive"
+                    icon={Landmark}
+                    colorClass="bg-violet-500 text-violet-600"
+                    sparkColor="#8b5cf6"
+                />
+                <StatCard
+                    title="Open Orders"
+                    amount={stats.activeOrders}
+                    change="-1"
+                    changeType="negative"
+                    icon={FileText}
+                    colorClass="bg-orange-500 text-orange-600"
+                    sparkColor="#f97316"
+                />
+            </div>
+
             {/* Transaction Ledger Table */}
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
                 <div className="px-10 py-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
