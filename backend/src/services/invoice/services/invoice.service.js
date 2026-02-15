@@ -23,6 +23,23 @@ const generateInvoiceNumber = async () => {
  * Create new invoice
  */
 exports.createInvoice = async (data) => {
+  // Validation
+  if (!data.customer_id) {
+    throw new Error('Customer is required');
+  }
+  if (!data.due_date) {
+    throw new Error('Due date is required');
+  }
+  if (!Array.isArray(data.items) || data.items.length === 0) {
+    throw new Error('At least one item is required');
+  }
+
+  for (const item of data.items) {
+    if (!item.product_id || !item.quantity || item.quantity <= 0) {
+      throw new Error('Each item must have a product and valid quantity');
+    }
+  }
+
   const invoiceNumber = await generateInvoiceNumber();
 
   // If items provided, compute amounts and taxes per-line
@@ -70,26 +87,49 @@ exports.createInvoice = async (data) => {
     totalTax = totalTax;
   }
 
-  return prisma.invoices.create({
-    data: {
-      customer_id: data.customer_id,
-      invoice_number: invoiceNumber,
-      issue_date: data.issue_date || new Date(),
-      due_date: data.due_date,
-      total_amount: totalAmount,
-      tax: totalTax || Number(data.tax) || 0,
-      discount: Number(data.discount) || 0,
-      round_off: Number(data.round_off) || 0,
-      status: data.status || 'DRAFT',
-      notes: data.notes,
-      paid_amount: 0,
-      line_items: {
-        create: lineItemsCreate
+  // Use a transaction to ensure invoice and stock movements succeed
+  return prisma.$transaction(async (tx) => {
+    // Create the invoice
+    const invoice = await tx.invoices.create({
+      data: {
+        customer_id: data.customer_id,
+        invoice_number: invoiceNumber,
+        issue_date: data.issue_date ? new Date(data.issue_date) : new Date(),
+        due_date: data.due_date ? new Date(data.due_date) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        total_amount: totalAmount,
+        tax: totalTax || Number(data.tax) || 0,
+        discount: Number(data.discount) || 0,
+        round_off: Number(data.round_off) || 0,
+        status: data.status || 'DRAFT',
+        notes: data.notes,
+        paid_amount: 0,
+        line_items: {
+          create: lineItemsCreate
+        }
+      },
+      include: {
+        line_items: true
       }
-    },
-    include: {
-      line_items: true
+    });
+
+    // Create stock OUT movements for each item
+    if (Array.isArray(data.items) && data.items.length) {
+      for (const it of data.items) {
+        if (it.product_id && it.quantity) {
+          await tx.stock_items.create({
+            data: {
+              product_id: it.product_id,
+              type: 'OUT',
+              quantity: Number(it.quantity),
+              reference: `Invoice-${invoice.id}`,
+              txn_date: data.issue_date ? new Date(data.issue_date) : new Date()
+            }
+          });
+        }
+      }
     }
+
+    return invoice;
   });
 };
 

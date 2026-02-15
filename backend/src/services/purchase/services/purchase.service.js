@@ -17,9 +17,26 @@ exports.createPurchase = async (data) => {
     data.total = parseFloat(subtotal) - parseFloat(discount) + parseFloat(tax) + parseFloat(roundOff);
   }
 
-  return prisma.purchases.create({
-    data,
-    include: { suppliers: true, products: true }
+  // Use a transaction to ensure both purchase and stock movement succeed
+  return prisma.$transaction(async (tx) => {
+    // Create the purchase record
+    const purchase = await tx.purchases.create({
+      data,
+      include: { suppliers: true, products: true }
+    });
+
+    // Create stock IN movement
+    await tx.stock_items.create({
+      data: {
+        product_id: data.product_id,
+        type: 'IN',
+        quantity: data.quantity,
+        reference: `Purchase-${purchase.id}`,
+        txn_date: data.purchase_date ? new Date(data.purchase_date) : new Date()
+      }
+    });
+
+    return purchase;
   });
 };
 

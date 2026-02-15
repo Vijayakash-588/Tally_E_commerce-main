@@ -94,7 +94,7 @@ const PaymentVoucherModal = ({ isOpen, onClose, selectedInvoice, unpaidInvoices 
                             <select
                                 value={formData.invoice_id}
                                 onChange={(e) => {
-                                    const inv = unpaidInvoices.find(i => i.id === parseInt(e.target.value));
+                                    const inv = unpaidInvoices.find(i => i.id === e.target.value);
                                     if (inv) {
                                         const paid = (inv.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
                                         const remaining = (inv.total_amount || inv.total || 0) - paid;

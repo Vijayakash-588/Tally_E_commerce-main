@@ -15,9 +15,26 @@ exports.createSale = async (data) => {
     data.total = parseFloat(subtotal) - parseFloat(discount) + parseFloat(tax) + parseFloat(roundOff);
   }
 
-  return prisma.sales.create({
-    data,
-    include: { customers: true, products: true }
+  // Use a transaction to ensure sale and stock movement succeed
+  return prisma.$transaction(async (tx) => {
+    // Create the sale record
+    const sale = await tx.sales.create({
+      data,
+      include: { customers: true, products: true }
+    });
+
+    // Create stock OUT movement
+    await tx.stock_items.create({
+      data: {
+        product_id: data.product_id,
+        type: 'OUT',
+        quantity: data.quantity,
+        reference: `Sale-${sale.id}`,
+        txn_date: data.sale_date ? new Date(data.sale_date) : new Date()
+      }
+    });
+
+    return sale;
   });
 };
 

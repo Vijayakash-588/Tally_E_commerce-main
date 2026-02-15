@@ -17,6 +17,7 @@ import Purchases from './pages/Purchases';
 import Banking from './pages/Banking';
 import StockMovements from './pages/StockMovements';
 import Invoices from './pages/Invoices';
+import Sales from './pages/Sales';
 
 function App() {
   return (
@@ -31,7 +32,8 @@ function App() {
             <Route element={<DashboardLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/products" element={<Products />} />
-              <Route path="/sales" element={<SalesInvoice />} />
+              <Route path="/sales" element={<Sales />} />
+              <Route path="/sales-invoices" element={<SalesInvoice />} />
               <Route path="/purchases" element={<Purchases />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/suppliers" element={<Suppliers />} />
