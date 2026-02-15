@@ -329,8 +329,7 @@ exports.getPayments = async (req, res, next) => {
   try {
     const payments = await prisma.payments.findMany({
       include: {
-        invoice: {
-        }
+        invoice: true
       },
       orderBy: { date: 'desc' }
     });

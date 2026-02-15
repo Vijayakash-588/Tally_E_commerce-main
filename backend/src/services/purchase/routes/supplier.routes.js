@@ -22,7 +22,7 @@ const auth = require('../../../middlewares/auth');
  *       200:
  *         description: List of suppliers
  */
-router.get('/list', controller.findAllSuppliers);
+router.get('/', controller.findAllSuppliers);
 
 /**
  * @swagger
