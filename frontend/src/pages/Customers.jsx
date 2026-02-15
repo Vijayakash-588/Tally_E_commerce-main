@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { Plus, Search, Edit, Trash2, X, ArrowLeft } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, ArrowLeft, User, Phone, Mail, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api/axios';
@@ -36,71 +36,88 @@ const CustomerModal = ({ isOpen, onClose, customer }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {customer ? 'Edit Customer' : 'New Customer'}
-                    </h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+            <div className="bg-white rounded-[2.5rem] max-w-2xl w-full p-10 shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-300">
+                <div className="flex justify-between items-start mb-8">
+                    <div>
+                        <span className="text-blue-600 text-[10px] font-black uppercase tracking-[0.3em] mb-2 block">Customer Master</span>
+                        <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+                            {customer ? 'Edit Customer' : 'New Customer'}
+                        </h2>
+                    </div>
+                    <button onClick={onClose} className="p-3 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-2xl transition-all">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="p-4 space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-                        <input
-                            {...register('name', { required: 'Name is required' })}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
-                            placeholder="e.g., John Doe"
-                        />
-                        {errors.name && <span className="text-red-500 text-xs">{errors.name.message}</span>}
+                <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                            <div className="group">
+                                <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+                                    <User className="w-3 h-3 mr-2" /> Customer Name
+                                </label>
+                                <input
+                                    {...register('name', { required: 'Name is required' })}
+                                    placeholder="e.g., John Doe"
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900"
+                                />
+                                {errors.name && <span className="text-red-500 text-xs font-bold">{errors.name.message}</span>}
+                            </div>
+
+                            <div className="group">
+                                <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+                                    <Phone className="w-3 h-3 mr-2" /> Phone Number
+                                </label>
+                                <input
+                                    {...register('phone')}
+                                    placeholder="+91-9876543210"
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="group">
+                                <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+                                    <Mail className="w-3 h-3 mr-2" /> Email Address
+                                </label>
+                                <input
+                                    type="email"
+                                    {...register('email')}
+                                    placeholder="customer@email.com"
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900"
+                                />
+                            </div>
+
+                            <div className="group">
+                                <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+                                    <MapPin className="w-3 h-3 mr-2" /> Address
+                                </label>
+                                <textarea
+                                    {...register('address')}
+                                    rows="3"
+                                    placeholder="Street, City, State, ZIP"
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900 resize-none"
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone</label>
-                        <input
-                            {...register('phone')}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
-                            placeholder="+91-9876543210"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                        <input
-                            type="email"
-                            {...register('email')}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
-                            placeholder="customer@email.com"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Address</label>
-                        <textarea
-                            {...register('address')}
-                            rows="3"
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm p-2 border"
-                            placeholder="Street, City, State, ZIP"
-                        />
-                    </div>
-
-                    <div className="pt-4 flex justify-end space-x-3">
+                    <div className="flex gap-4 pt-6">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            className="flex-1 px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-slate-100 font-black text-slate-600 uppercase tracking-widest text-xs transition-all"
                         >
-                            Cancel
+                            Discard
                         </button>
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                            className="flex-1 px-8 py-5 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-600/30 hover:bg-blue-700 font-black uppercase tracking-widest text-xs transition-all disabled:opacity-50"
                         >
-                            {isSubmitting ? 'Saving...' : 'Save'}
+                            {isSubmitting ? 'Saving...' : 'Save Customer'}
                         </button>
                     </div>
                 </form>
@@ -151,89 +168,94 @@ const Customers = () => {
     );
 
     return (
-        <div>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div className="flex items-center gap-3">
+        <div className="space-y-8">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate('/')}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        className="p-3 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-2xl transition-all"
                         title="Back to Dashboard"
                     >
-                        <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                        <ArrowLeft className="w-5 h-5" />
                     </button>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Customers</h1>
+                    <div>
+                        <span className="text-blue-600 text-[10px] font-black uppercase tracking-[0.3em] block">Customer Management</span>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">All Customers</h1>
+                    </div>
                 </div>
                 <button
                     onClick={() => { setSelectedCustomer(null); setIsModalOpen(true); }}
-                    className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                    className="flex items-center px-6 py-4 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-600/30 hover:bg-blue-700 font-black uppercase tracking-widest text-xs transition-all"
                 >
                     <Plus className="w-5 h-5 mr-2" />
                     Add Customer
                 </button>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+                <div className="p-8 border-b border-slate-100">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                         <input
                             type="text"
-                            placeholder="Search customers..."
+                            placeholder="Search customers by name or email..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                            className="w-full pl-14 pr-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900"
                         />
                     </div>
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-700/50">
+                    <table className="min-w-full">
+                        <thead className="bg-slate-50/50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Phone</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Address</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Name</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Phone</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Email</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Address</th>
+                                <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="bg-white divide-y divide-slate-100">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">Loading...</td>
+                                    <td colSpan="5" className="px-8 py-12 text-center text-slate-400 font-bold">Loading customers...</td>
                                 </tr>
                             ) : filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">No customers found</td>
+                                    <td colSpan="5" className="px-8 py-12 text-center text-slate-400 font-bold">No customers found</td>
                                 </tr>
                             ) : (
                                 filtered.map((customer) => (
-                                    <tr key={customer.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{customer.name}</div>
+                                    <tr key={customer.id} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="px-8 py-5 whitespace-nowrap">
+                                            <div className="text-sm font-black text-slate-900">{customer.name}</div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-8 py-5 whitespace-nowrap text-sm font-bold text-slate-600">
                                             {customer.phone || '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-8 py-5 whitespace-nowrap text-sm font-bold text-slate-600">
                                             {customer.email || '-'}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                        <td className="px-8 py-5 text-sm font-bold text-slate-600">
                                             {customer.address || '-'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button
-                                                onClick={() => handleEdit(customer)}
-                                                className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-4"
-                                            >
-                                                <Edit className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(customer.id)}
-                                                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                        <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
+                                            <div className="flex items-center justify-end gap-3">
+                                                <button
+                                                    onClick={() => handleEdit(customer)}
+                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(customer.id)}
+                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
