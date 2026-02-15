@@ -16,6 +16,7 @@ import Customers from './pages/Customers';
 import Purchases from './pages/Purchases';
 import Banking from './pages/Banking';
 import StockMovements from './pages/StockMovements';
+import Invoices from './pages/Invoices';
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
               <Route path="/customers" element={<Customers />} />
               <Route path="/suppliers" element={<Suppliers />} />
               <Route path="/banking" element={<Banking />} />
+              <Route path="/invoices" element={<Invoices />} />
               <Route path="/stock-movements" element={<StockMovements />} />
               <Route path="/reports/profit-loss" element={<ProfitLoss />} />
               <Route path="/inventory" element={<StockSummary />} />

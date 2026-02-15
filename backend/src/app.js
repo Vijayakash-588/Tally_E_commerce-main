@@ -10,6 +10,7 @@ const authRoutes = require('./services/auth/routes/auth.routes');
 const productRoutes = require('./services/product/routes/product.routes');
 const inventoryRoutes = require('./services/inventory/routes/inventory.routes');
 const salesRoutes = require('./services/sales/routes/sales.routes');
+const customerRoutes = require('./services/sales/routes/customer.routes');
 const purchaseRoutes = require('./services/purchase/routes/purchase.routes');
 const supplierRoutes = require('./services/purchase/routes/supplier.routes');
 const invoiceRoutes = require('./services/invoice/routes/invoice.routes');
@@ -55,9 +56,9 @@ app.use('/api/products', productRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/stock_items', inventoryRoutes); // Alias for backward compatibility
 
-// Sales Service (Sales + Customers)
+// Sales Service (Sales)
 app.use('/api/sales', salesRoutes);
-app.use('/api/customers', salesRoutes);
+app.use('/api/customers', customerRoutes);
 
 // Purchase Service (Purchases + Suppliers)
 app.use('/api/purchases', purchaseRoutes);

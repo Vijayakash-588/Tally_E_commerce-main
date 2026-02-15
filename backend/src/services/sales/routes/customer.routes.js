@@ -1,35 +1,33 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/purchase.controller');
+const controller = require('../controllers/sales.controller');
 const auth = require('../../../middlewares/auth');
 
 /**
  * @swagger
  * tags:
- *   name: Supplier
- *   description: Supplier management
+ *   name: Customers
+ *   description: Customer management
  */
-
-// SUPPLIER ROUTES
 
 /**
  * @swagger
- * /api/suppliers/list:
+ * /api/customers:
  *   get:
- *     summary: Get all suppliers
- *     tags: [Supplier]
+ *     summary: Get all customers
+ *     tags: [Customers]
  *     responses:
  *       200:
- *         description: List of suppliers
+ *         description: List of customers
  */
-router.get('/', controller.findAllSuppliers);
+router.get('/', controller.findAllCustomers);
 
 /**
  * @swagger
- * /api/suppliers/{id}:
+ * /api/customers/{id}:
  *   get:
- *     summary: Get supplier by ID
- *     tags: [Supplier]
+ *     summary: Get customer by ID
+ *     tags: [Customers]
  *     parameters:
  *       - in: path
  *         name: id
@@ -38,16 +36,16 @@ router.get('/', controller.findAllSuppliers);
  *           type: string
  *     responses:
  *       200:
- *         description: Supplier details
+ *         description: Customer details
  */
-router.get('/:id', controller.findSupplierById);
+router.get('/:id', controller.findCustomerById);
 
 /**
  * @swagger
- * /api/suppliers/{id}/purchases:
+ * /api/customers/{id}/sales:
  *   get:
- *     summary: Get supplier with purchase history
- *     tags: [Supplier]
+ *     summary: Get customer with sales history
+ *     tags: [Customers]
  *     parameters:
  *       - in: path
  *         name: id
@@ -56,16 +54,16 @@ router.get('/:id', controller.findSupplierById);
  *           type: string
  *     responses:
  *       200:
- *         description: Supplier with purchases
+ *         description: Customer with sales
  */
-router.get('/:id/purchases', controller.getSupplierWithPurchases);
+router.get('/:id/sales', controller.getCustomerWithSales);
 
 /**
  * @swagger
- * /api/suppliers/new:
+ * /api/customers:
  *   post:
- *     summary: Create new supplier
- *     tags: [Supplier]
+ *     summary: Create new customer
+ *     tags: [Customers]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -79,20 +77,19 @@ router.get('/:id/purchases', controller.getSupplierWithPurchases);
  *               name: { type: string }
  *               email: { type: string }
  *               phone: { type: string }
- *               contact: { type: string }
  *               address: { type: string }
  *     responses:
  *       201:
- *         description: Supplier created
+ *         description: Customer created
  */
-router.post('/', auth, controller.createSupplier);
+router.post('/', auth, controller.createCustomer);
 
 /**
  * @swagger
- * /api/suppliers/{id}:
+ * /api/customers/{id}:
  *   put:
- *     summary: Update supplier
- *     tags: [Supplier]
+ *     summary: Update customer
+ *     tags: [Customers]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -107,16 +104,16 @@ router.post('/', auth, controller.createSupplier);
  *             type: object
  *     responses:
  *       200:
- *         description: Supplier updated
+ *         description: Customer updated
  */
-router.put('/:id', auth, controller.updateSupplier);
+router.put('/:id', auth, controller.updateCustomer);
 
 /**
  * @swagger
- * /api/suppliers/{id}:
+ * /api/customers/{id}:
  *   delete:
- *     summary: Delete supplier
- *     tags: [Supplier]
+ *     summary: Delete customer
+ *     tags: [Customers]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -125,8 +122,8 @@ router.put('/:id', auth, controller.updateSupplier);
  *         required: true
  *     responses:
  *       200:
- *         description: Supplier deleted
+ *         description: Customer deleted
  */
-router.delete('/:id', auth, controller.deleteSupplier);
+router.delete('/:id', auth, controller.deleteCustomer);
 
 module.exports = router;

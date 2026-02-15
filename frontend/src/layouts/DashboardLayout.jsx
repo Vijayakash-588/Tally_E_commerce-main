@@ -17,6 +17,7 @@ import {
     Users,
     Truck,
     ShoppingCart,
+    ShoppingBag,
     TrendingUp,
     Zap,
     ChevronRight,
@@ -99,7 +100,12 @@ const DashboardLayout = () => {
                             { title: "Sales Voucher", sub: "Record Sales", icon: ShoppingCart, color: "bg-blue-600", to: "/sales" },
                             { title: "Purchase Voucher", sub: "Stock Entry", icon: Package, color: "bg-indigo-600", to: "/purchases" },
                             { title: "Banking & Cash", sub: "Payments", icon: Landmark, color: "bg-cyan-600", to: "/banking" },
+                            { title: "Invoices", sub: "View All Invoices", icon: FileText, color: "bg-violet-600", to: "/invoices" },
                             { title: "Stock Summary", sub: "Inventory", icon: Package, color: "bg-amber-600", to: "/inventory" },
+                            { title: "Products", sub: "Product Catalog", icon: ShoppingBag, color: "bg-rose-600", to: "/products" },
+                            { title: "Stock Movements", sub: "Track Movement", icon: TrendingUp, color: "bg-teal-600", to: "/stock-movements" },
+                            { title: "Customers", sub: "Manage Customers", icon: Users, color: "bg-green-600", to: "/customers" },
+                            { title: "Suppliers", sub: "Manage Suppliers", icon: Truck, color: "bg-purple-600", to: "/suppliers" },
                         ].map((item, idx) => (
                             <NavLink
                                 key={idx}
