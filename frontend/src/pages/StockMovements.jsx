@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowUp, ArrowDown, Search, ArrowLeft, Plus } from 'lucide-react';
+import { ArrowUp, ArrowDown, Search, ArrowLeft, TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import clsx from 'clsx';
 
 const StockMovements = () => {
     const navigate = useNavigate();
@@ -42,7 +43,7 @@ const StockMovements = () => {
 
     const filtered = movements.filter(m => {
         const matchesSearch = m.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             (m.reference && m.reference.toLowerCase().includes(searchTerm.toLowerCase()));
+            (m.reference && m.reference.toLowerCase().includes(searchTerm.toLowerCase()));
         const matchesType = filterType === 'all' || m.type === filterType;
         return matchesSearch && matchesType;
     });
@@ -55,194 +56,149 @@ const StockMovements = () => {
     };
 
     return (
-        <div>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => navigate('/')}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        title="Back to Dashboard"
-                    >
-                        <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                    </button>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Stock Movements</h1>
+        <div className="space-y-8">
+            {/* Header */}
+            <div className="flex items-center gap-4">
+                <button
+                    onClick={() => navigate('/')}
+                    className="p-3 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-2xl transition-all"
+                    title="Back to Dashboard"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div>
+                    <span className="text-blue-600 text-[10px] font-black uppercase tracking-[0.3em] block">Inventory Tracking</span>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight">Stock Movements</h1>
                 </div>
             </div>
 
-            {/* Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Stock In</p>
-                            <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{stats.inbound}</p>
+                            <p className="text-slate-400 text-xs font-black uppercase tracking-widest">Stock In</p>
+                            <p className="text-3xl font-black text-green-600 mt-2 tracking-tight">{stats.inbound}</p>
+                            <p className="text-xs font-bold text-slate-400 mt-1">Units Received</p>
                         </div>
-                        <ArrowDown className="w-10 h-10 text-green-600 dark:text-green-400 opacity-20" />
+                        <div className="p-4 rounded-2xl bg-green-50 group-hover:scale-110 transition-transform duration-500">
+                            <TrendingDown className="w-6 h-6 text-green-600" />
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+                <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Stock Out</p>
-                            <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{stats.outbound}</p>
+                            <p className="text-slate-400 text-xs font-black uppercase tracking-widest">Stock Out</p>
+                            <p className="text-3xl font-black text-red-600 mt-2 tracking-tight">{stats.outbound}</p>
+                            <p className="text-xs font-bold text-slate-400 mt-1">Units Dispatched</p>
                         </div>
-                        <ArrowUp className="w-10 h-10 text-red-600 dark:text-red-400 opacity-20" />
+                        <div className="p-4 rounded-2xl bg-red-50 group-hover:scale-110 transition-transform duration-500">
+                            <TrendingUp className="w-6 h-6 text-red-600" />
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+                <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Movements</p>
-                            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{stats.total}</p>
+                            <p className="text-slate-400 text-xs font-black uppercase tracking-widest">Total Movements</p>
+                            <p className="text-3xl font-black text-blue-600 mt-2 tracking-tight">{stats.total}</p>
+                            <p className="text-xs font-bold text-slate-400 mt-1">All Transactions</p>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-blue-50 group-hover:scale-110 transition-transform duration-500">
+                            <Activity className="w-6 h-6 text-blue-600" />
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Movements Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Filters and Table */}
+            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+                <div className="p-8 border-b border-slate-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                             <input
                                 type="text"
                                 placeholder="Search by product or reference..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                                className="w-full pl-14 pr-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900"
                             />
                         </div>
                         <select
                             value={filterType}
                             onChange={(e) => setFilterType(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                            className="px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900 appearance-none"
                         >
-                            <option value="all">All Types</option>
-                            <option value="IN">Stock In</option>
-                            <option value="OUT">Stock Out</option>
+                            <option value="all">All Movements</option>
+                            <option value="IN">Stock In Only</option>
+                            <option value="OUT">Stock Out Only</option>
                         </select>
                     </div>
                 </div>
 
+                {/* Movements Table */}
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-700/50">
+                    <table className="min-w-full">
+                        <thead className="bg-slate-50/50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Product</th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Quantity</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reference</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Notes</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Product</th>
+                                <th className="px-8 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Type</th>
+                                <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Quantity</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Reference</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Date</th>
+                                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Notes</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="bg-white divide-y divide-slate-100">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">Loading...</td>
+                                    <td colSpan="6" className="px-8 py-12 text-center text-slate-400 font-bold">Loading movements...</td>
                                 </tr>
                             ) : filtered.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">No movements found</td>
+                                    <td colSpan="6" className="px-8 py-12 text-center text-slate-400 font-bold">No movements found</td>
                                 </tr>
                             ) : (
                                 filtered.map((movement) => (
-                                    <tr key={movement.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                                            {movement.date ? new Date(movement.date).toLocaleDateString('en-IN') : '-'}
+                                    <tr key={movement.id} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="px-8 py-5 whitespace-nowrap">
+                                            <div className="text-sm font-black text-slate-900">{movement.product_name}</div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{movement.product_name}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                                                movement.type === 'IN' 
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
-                                                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                                            }`}>
+                                        <td className="px-8 py-5 whitespace-nowrap text-center">
+                                            <span className={clsx(
+                                                "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider",
+                                                movement.type === 'IN'
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : 'bg-red-100 text-red-700'
+                                            )}>
                                                 {movement.type === 'IN' ? (
                                                     <>
-                                                        <ArrowDown className="w-3 h-3 mr-1" />
-                                                        Stock In
+                                                        <ArrowDown className="w-3 h-3" />
+                                                        In
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <ArrowUp className="w-3 h-3 mr-1" />
-                                                        Stock Out
+                                                        <ArrowUp className="w-3 h-3" />
+                                                        Out
                                                     </>
                                                 )}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                                            <span className={`text-sm font-semibold ${
-                                                movement.type === 'IN' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                                            }`}>
-                                                {movement.type === 'IN' ? '+' : '-'}{movement.quantity}
-                                            </span>
+                                        <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-black text-slate-900">
+                                            {movement.quantity}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                                        <td className="px-8 py-5 whitespace-nowrap text-sm font-bold text-slate-600">
                                             {movement.reference || '-'}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">
-                                            {movement.notes || '-'}
+                                        <td className="px-8 py-5 whitespace-nowrap text-sm font-bold text-slate-600">
+                                            {movement.date ? new Date(movement.date).toLocaleDateString('en-IN') : '-'}
                                         </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Movement Summary by Product */}
-            <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Movement Summary by Product</h2>
-                </div>
-
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead className="bg-gray-50 dark:bg-gray-700/50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Product</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock In</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock Out</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Net Change</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            {isLoading ? (
-                                <tr>
-                                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">Loading...</td>
-                                </tr>
-                            ) : movements.length === 0 ? (
-                                <tr>
-                                    <td colSpan="4" className="px-6 py-4 text-center text-gray-500">No movements found</td>
-                                </tr>
-                            ) : (
-                                Object.entries(
-                                    movements.reduce((acc, m) => {
-                                        if (!acc[m.product_id]) {
-                                            acc[m.product_id] = { 
-                                                name: m.product_name, 
-                                                in: 0, 
-                                                out: 0 
-                                            };
-                                        }
-                                        if (m.type === 'IN') acc[m.product_id].in += m.quantity;
-                                        if (m.type === 'OUT') acc[m.product_id].out += m.quantity;
-                                        return acc;
-                                    }, {})
-                                ).map(([productId, data]) => (
-                                    <tr key={productId} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white">{data.name}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-green-600 dark:text-green-400 font-semibold">+{data.in}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-red-600 dark:text-red-400 font-semibold">-{data.out}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right font-bold text-gray-900 dark:text-white">
-                                            {data.in - data.out}
+                                        <td className="px-8 py-5 text-sm font-bold text-slate-600">
+                                            {movement.notes || '-'}
                                         </td>
                                     </tr>
                                 ))
