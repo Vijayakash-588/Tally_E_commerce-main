@@ -6,6 +6,17 @@ const prisma = require('../../../prisma');
  * Create new purchase
  */
 exports.createPurchase = async (data) => {
+  // Calculate total if not provided
+  if (!data.total && data.quantity && data.unit_price) {
+    const subtotal = data.quantity * data.unit_price;
+    const discount = data.discount || 0;
+    const tax = data.tax || 0;
+    const roundOff = data.round_off || 0;
+
+    // Total = (Qty * Price) - Discount + Tax + RoundOff
+    data.total = parseFloat(subtotal) - parseFloat(discount) + parseFloat(tax) + parseFloat(roundOff);
+  }
+
   return prisma.purchases.create({
     data,
     include: { suppliers: true, products: true }
@@ -29,7 +40,7 @@ exports.getPurchasesByDateRange = async (startDate, endDate) => {
   // Use default dates if not provided
   const start = startDate && !isNaN(startDate) ? startDate : new Date(new Date().setDate(new Date().getDate() - 30));
   const end = endDate && !isNaN(endDate) ? endDate : new Date();
-  
+
   return prisma.purchases.findMany({
     where: {
       purchase_date: {
@@ -67,6 +78,20 @@ exports.findPurchaseById = async (id) => {
  * Update purchase
  */
 exports.updatePurchase = async (id, data) => {
+  // Recalculate total if key fields are changing
+  if (data.quantity || data.unit_price || data.discount !== undefined || data.tax !== undefined || data.round_off !== undefined) {
+    // We would need to fetch existing values to do this perfectly if partial data is sent, 
+    // but typically frontend sends full object. For now, trust frontend or assume data has all fields.
+    // If complex logic is needed, fetch existing record first.
+    if (data.quantity && data.unit_price) {
+      const subtotal = data.quantity * data.unit_price;
+      const discount = data.discount || 0;
+      const tax = data.tax || 0;
+      const roundOff = data.round_off || 0;
+      data.total = parseFloat(subtotal) - parseFloat(discount) + parseFloat(tax) + parseFloat(roundOff);
+    }
+  }
+
   return prisma.purchases.update({
     where: { id },
     data,

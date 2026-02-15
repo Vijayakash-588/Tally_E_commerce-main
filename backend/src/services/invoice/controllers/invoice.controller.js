@@ -1,4 +1,5 @@
 const service = require('../services/invoice.service');
+const prisma = require('../../../prisma');
 
 /**
  * Create new invoice
@@ -329,7 +330,6 @@ exports.getPayments = async (req, res, next) => {
     const payments = await prisma.payments.findMany({
       include: {
         invoice: {
-          include: { customers: true }
         }
       },
       orderBy: { date: 'desc' }

@@ -66,7 +66,7 @@ exports.createInvoice = async (data) => {
     }
 
     const itemsTotal = lineItemsCreate.reduce((s, li) => s + Number(li.amount || 0), 0);
-    totalAmount = itemsTotal - (Number(data.discount) || 0);
+    totalAmount = itemsTotal - (Number(data.discount) || 0) + (Number(data.round_off) || 0);
     totalTax = totalTax;
   }
 
@@ -79,6 +79,7 @@ exports.createInvoice = async (data) => {
       total_amount: totalAmount,
       tax: totalTax || Number(data.tax) || 0,
       discount: Number(data.discount) || 0,
+      round_off: Number(data.round_off) || 0,
       status: data.status || 'DRAFT',
       notes: data.notes,
       paid_amount: 0,
@@ -100,7 +101,6 @@ exports.findAllInvoices = async () => {
     include: {
       line_items: true,
       payments: true,
-      customers: true
     },
     orderBy: { created_at: 'desc' }
   });
@@ -115,7 +115,6 @@ exports.findInvoiceById = async (id) => {
     include: {
       line_items: true,
       payments: true,
-      customers: true
     }
   });
 };
@@ -129,7 +128,6 @@ exports.findByInvoiceNumber = async (invoiceNumber) => {
     include: {
       line_items: true,
       payments: true,
-      customers: true
     }
   });
 };

@@ -84,6 +84,7 @@ const Purchases = () => {
         supplier_id: '',
         items: []
     });
+    const [barcode, setBarcode] = useState('');
     const [items, setItems] = useState([]);
 
     const queryClient = useQueryClient();
@@ -140,6 +141,28 @@ const Purchases = () => {
         if (purchasesList) setPurchases(purchasesList);
     }, [purchasesList]);
 
+    const calculateTotal = (items, discount = 0, tax = 0, roundOff = 0) => {
+        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        // Backend now handles tax per item if we send tax_amount, but here we want a simple view.
+        // Tally style: Subtotal - Discount + Tax + RoundOff = Total
+        // If items have individual tax, we sum it up.
+
+        let totalTax = 0;
+        items.forEach(item => {
+            const taxRate = taxRates.find(t => t.id === item.tax_rate_id);
+            if (taxRate) {
+                totalTax += (item.price * item.quantity * taxRate.rate / 100);
+            }
+        });
+
+        // Override or add to totalTax? 
+        // For Tally simplicity, let's treat the 'Tax' field in formData as an "Additional Tax/Charge" or just display the calculated tax.
+        // Actually, Tally usually calculates tax from items. Let's stick to that.
+        // But we added a 'tax' field to the Purchase model as a summary.
+
+        return subtotal - parseFloat(discount || 0) + totalTax + parseFloat(roundOff || 0);
+    };
+
     const createMutation = useMutation({
         mutationFn: (data) => api.post('/purchases', data),
         onSuccess: () => {
@@ -176,7 +199,10 @@ const Purchases = () => {
     const recalcTotals = (lineItems) => {
         const subtotal = lineItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         const tax = lineItems.reduce((sum, item) => sum + (item.tax_amount || 0), 0);
-        return { subtotal, tax, total: subtotal + tax };
+        const discount = parseFloat(formData.discount || 0);
+        const roundOff = parseFloat(formData.round_off || 0);
+        const total = subtotal - discount + tax + roundOff;
+        return { subtotal, tax, discount, roundOff, total };
     };
 
     const handleAddItem = () => {
@@ -190,12 +216,12 @@ const Purchases = () => {
     const handleItemChange = (index, field, value) => {
         const newItems = [...items];
         if (field === 'product_id') {
-            const product = products.find(p => p.id === parseInt(value));
-            newItems[index].product_id = parseInt(value);
+            const product = products.find(p => p.id === value);
+            newItems[index].product_id = value;
             if (product) newItems[index].price = product.price;
         } else if (field === 'tax_rate_id') {
-            const taxRate = taxRates.find(t => t.id === parseInt(value));
-            newItems[index].tax_rate_id = parseInt(value);
+            const taxRate = taxRates.find(t => t.id === value);
+            newItems[index].tax_rate_id = value;
             const itemSubtotal = (newItems[index].price || 0) * (newItems[index].quantity || 1);
             newItems[index].tax_amount = taxRate ? (itemSubtotal * taxRate.rate / 100) : 0;
         } else {
@@ -223,11 +249,24 @@ const Purchases = () => {
             const promises = items.map(item => {
                 const itemTotal = (item.price * item.quantity) + (item.tax_amount || 0);
                 const payload = {
-                    supplier_id: parseInt(formData.supplier_id),
-                    product_id: parseInt(item.product_id),
+                    supplier_id: formData.supplier_id,
+                    product_id: item.product_id,
                     quantity: parseFloat(item.quantity),
                     unit_price: parseFloat(item.price), // Backend expects unit_price
-                    total: itemTotal
+                    // Wait, our backend model is per-item for 'Purchases' table? 
+                    // NO, 'purchases' table seems to be a single-line transaction based on previous analysis. 
+                    // BUT the UI supports multiple items! 
+                    // If the UI sends multiple items, it loops and sends multiple API calls (check handleSave).
+                    // Yes: `const promises = items.map(...)`
+                    // This means we are creating INDIVIDUAL purchase records for each item. 
+                    // This is NOT how a real Invoice works (One Invoice -> Many Items).
+                    // To support "Invoice Level" Discount/RoundOff in this architecture, we have to distribute it or attach it to the first item?
+                    // Distributing it is safest for totals.
+
+                    discount: (parseFloat(formData.discount || 0) / items.length).toFixed(2),
+                    tax: (item.tax_amount || 0), // Item specific tax
+                    round_off: (parseFloat(formData.round_off || 0) / items.length).toFixed(2),
+                    total: itemTotal - (parseFloat(formData.discount || 0) / items.length) + (parseFloat(formData.round_off || 0) / items.length)
                 };
                 // We use createMutation.mutationFn directly or axios
                 return api.post('/purchases', payload);
@@ -261,6 +300,7 @@ const Purchases = () => {
     const resetForm = () => {
         setFormData({ supplier_id: '', items: [] });
         setItems([]);
+        setBarcode('');
         setEditingPurchase(null);
         setIsModalOpen(false);
     };
@@ -472,6 +512,43 @@ const Purchases = () => {
                                     </button>
                                 </div>
 
+                                <div className="flex items-center space-x-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                    <div className="bg-white p-2 rounded-lg shadow-sm">
+                                        <Search className="w-4 h-4 text-blue-600" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={barcode}
+                                        onChange={(e) => setBarcode(e.target.value)}
+                                        onKeyDown={async (e) => {
+                                            if (e.key === 'Enter' && barcode) {
+                                                try {
+                                                    const res = await api.get(`/products/barcode/${barcode}`);
+                                                    if (res.data.success && res.data.data) {
+                                                        const p = res.data.data;
+                                                        // Add item
+                                                        setItems([...items, {
+                                                            product_id: p.id,
+                                                            quantity: 1,
+                                                            price: p.price || 0, // Assuming price field exists or defaults to 0
+                                                            tax_rate_id: '',
+                                                            tax_amount: 0
+                                                        }]);
+                                                        setBarcode('');
+                                                        toast.success(`Added ${p.name}`);
+                                                    } else {
+                                                        toast.error('Product not found');
+                                                    }
+                                                } catch (err) {
+                                                    toast.error('Product not found');
+                                                }
+                                            }
+                                        }}
+                                        placeholder="Scan Barcode & Hit Enter..."
+                                        className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-slate-900 placeholder:text-slate-400"
+                                    />
+                                </div>
+
                                 <div className="bg-slate-50/50 rounded-[2rem] border border-slate-100 overflow-hidden">
                                     <table className="min-w-full">
                                         <thead>
@@ -555,15 +632,42 @@ const Purchases = () => {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="bg-slate-900 rounded-[2rem] p-8 text-white flex flex-col justify-between shadow-xl shadow-slate-900/10">
+                                <div className="md:col-span-1 bg-slate-900 rounded-[2rem] p-8 text-white flex flex-col justify-between shadow-xl shadow-slate-900/10">
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center text-xs opacity-60">
                                             <span>Subtotal</span>
                                             <span className="font-black">₹{totals.subtotal.toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-xs opacity-60">
-                                            <span>Tax Ledger</span>
-                                            <span className="font-black">₹{totals.tax.toFixed(2)}</span>
+                                            <span>Tax (GST)</span>
+                                            <span className="font-black">+ ₹{totals.tax.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs opacity-60">
+                                            <span>Discount</span>
+                                            <div className="flex items-center">
+                                                <span className="mr-1">- ₹</span>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={formData.discount || ''}
+                                                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                                                    className="w-16 bg-transparent text-right font-black border-b border-slate-600 focus:border-white outline-none"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs opacity-60">
+                                            <span>Round Off</span>
+                                            <div className="flex items-center">
+                                                <span className="mr-1">+/- ₹</span>
+                                                <input
+                                                    type="number"
+                                                    value={formData.round_off || ''}
+                                                    onChange={(e) => setFormData({ ...formData, round_off: e.target.value })}
+                                                    className="w-16 bg-transparent text-right font-black border-b border-slate-600 focus:border-white outline-none"
+                                                    placeholder="0"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="border-t border-slate-800 pt-6 mt-6">

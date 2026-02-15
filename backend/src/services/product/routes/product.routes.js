@@ -78,6 +78,24 @@ router.get('/:id', controller.findById);
 
 /**
  * @swagger
+ * /api/products/barcode/{barcode}:
+ *   get:
+ *     summary: Get product by Barcode
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: barcode
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Product details
+ */
+router.get('/barcode/:barcode', controller.findByBarcode);
+
+/**
+ * @swagger
  * /api/products:
  *   post:
  *     summary: Create new product

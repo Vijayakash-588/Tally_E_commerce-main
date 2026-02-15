@@ -4,6 +4,17 @@ const prisma = require('../../../prisma');
  * Create new sale
  */
 exports.createSale = async (data) => {
+  // Calculate total if not provided
+  if (!data.total && data.quantity && data.unit_price) {
+    const subtotal = data.quantity * data.unit_price; // unit_price is selling price here
+    const discount = data.discount || 0;
+    const tax = data.tax || 0;
+    const roundOff = data.round_off || 0;
+
+    // Total = (Qty * Price) - Discount + Tax + RoundOff
+    data.total = parseFloat(subtotal) - parseFloat(discount) + parseFloat(tax) + parseFloat(roundOff);
+  }
+
   return prisma.sales.create({
     data,
     include: { customers: true, products: true }
@@ -27,7 +38,7 @@ exports.getSalesByDateRange = async (startDate, endDate) => {
   // Use default dates if not provided
   const start = startDate && !isNaN(startDate) ? startDate : new Date(new Date().setDate(new Date().getDate() - 30));
   const end = endDate && !isNaN(endDate) ? endDate : new Date();
-  
+
   return prisma.sales.findMany({
     where: {
       sale_date: {
@@ -65,6 +76,17 @@ exports.findSaleById = async (id) => {
  * Update sale
  */
 exports.updateSale = async (id, data) => {
+  // Recalculate total if key fields are changing
+  if (data.quantity || data.unit_price || data.discount !== undefined || data.tax !== undefined || data.round_off !== undefined) {
+    if (data.quantity && data.unit_price) {
+      const subtotal = data.quantity * data.unit_price;
+      const discount = data.discount || 0;
+      const tax = data.tax || 0;
+      const roundOff = data.round_off || 0;
+      data.total = parseFloat(subtotal) - parseFloat(discount) + parseFloat(tax) + parseFloat(roundOff);
+    }
+  }
+
   return prisma.sales.update({
     where: { id },
     data,

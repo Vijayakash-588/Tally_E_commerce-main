@@ -33,8 +33,10 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
         due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         notes: '',
         discount: 0,
+        round_off: 0,
         items: []
     });
+    const [barcode, setBarcode] = useState('');
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers'],
@@ -68,6 +70,7 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
                 due_date: invoice.due_date?.split('T')[0] || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                 notes: invoice.notes || '',
                 discount: invoice.discount || 0,
+                round_off: invoice.round_off || 0,
                 items: invoice.invoice_items || []
             });
         } else {
@@ -77,8 +80,10 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
                 due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                 notes: '',
                 discount: 0,
+                round_off: 0,
                 items: []
             });
+            setBarcode('');
         }
     }, [invoice]);
 
@@ -118,8 +123,8 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
     const handleItemChange = (index, field, value) => {
         const newItems = [...formData.items];
         if (field === 'product_id') {
-            const product = products.find(p => p.id === parseInt(value));
-            newItems[index].product_id = parseInt(value);
+            const product = products.find(p => p.id === value);
+            newItems[index].product_id = value;
             if (product) newItems[index].unit_price = product.price || 0;
         } else {
             newItems[index][field] = field === 'quantity' || field === 'unit_price' ? parseFloat(value) || 0 : value;
@@ -131,11 +136,12 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
         const subtotal = formData.items.reduce((sum, item) => sum + ((item.quantity || 0) * (item.unit_price || 0)), 0);
         const tax = formData.items.reduce((sum, item) => {
             const itemTotal = (item.quantity || 0) * (item.unit_price || 0);
-            const taxRate = taxRates.find(t => t.id === parseInt(item.tax_rate_id));
+            const taxRate = taxRates.find(t => t.id === item.tax_rate_id);
             return sum + (taxRate ? itemTotal * (taxRate.rate / 100) : 0);
         }, 0);
         const discount = parseFloat(formData.discount) || 0;
-        return { subtotal, tax, discount, total: subtotal + tax - discount };
+        const roundOff = parseFloat(formData.round_off) || 0;
+        return { subtotal, tax, discount, roundOff, total: subtotal + tax - discount + roundOff };
     };
 
     const totals = calculateTotals();
@@ -214,6 +220,45 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
                             </button>
                         </div>
 
+                        <div className="flex items-center space-x-2 bg-slate-50 p-2 rounded-xl border border-slate-100 mb-4">
+                            <div className="bg-white p-2 rounded-lg shadow-sm">
+                                <Search className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <input
+                                type="text"
+                                value={barcode}
+                                onChange={(e) => setBarcode(e.target.value)}
+                                onKeyDown={async (e) => {
+                                    if (e.key === 'Enter' && barcode) {
+                                        try {
+                                            const res = await api.get(`/products/barcode/${barcode}`);
+                                            if (res.data.success && res.data.data) {
+                                                const p = res.data.data;
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    items: [...prev.items, {
+                                                        product_id: p.id,
+                                                        quantity: 1,
+                                                        unit_price: p.price || 0,
+                                                        tax_rate_id: '',
+                                                        description: ''
+                                                    }]
+                                                }));
+                                                setBarcode('');
+                                                toast.success(`Added ${p.name}`);
+                                            } else {
+                                                toast.error('Product not found');
+                                            }
+                                        } catch (err) {
+                                            toast.error('Product not found');
+                                        }
+                                    }
+                                }}
+                                placeholder="Scan Barcode & Hit Enter..."
+                                className="flex-1 bg-transparent border-none outline-none text-xs font-bold text-slate-900 placeholder:text-slate-400"
+                            />
+                        </div>
+
                         <div className="border border-slate-100 rounded-[2rem] overflow-hidden bg-white shadow-sm">
                             <table className="w-full">
                                 <thead className="bg-slate-50/50 border-b border-slate-100">
@@ -239,7 +284,7 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
                                     ) : (
                                         formData.items.map((item, idx) => {
                                             const itemAmount = (item.quantity || 0) * (item.unit_price || 0);
-                                            const taxRate = taxRates.find(t => t.id === parseInt(item.tax_rate_id));
+                                            const taxRate = taxRates.find(t => t.id === item.tax_rate_id);
                                             const taxAmount = taxRate ? itemAmount * (taxRate.rate / 100) : 0;
                                             return (
                                                 <tr key={idx} className="group hover:bg-slate-50 transition-colors">
@@ -354,13 +399,35 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
                                         <span>₹{totals.tax.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                                     </div>
                                     <div className="flex justify-between text-xs font-bold">
-                                        <span className="text-slate-500">Less: Rounding/Dis</span>
-                                        <input
-                                            type="number"
-                                            value={formData.discount}
-                                            onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                                            className="bg-transparent text-right border-none outline-none w-20 p-0 text-rose-400 focus:ring-0"
-                                        />
+                                        <div className="flex flex-col gap-1 w-full">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-slate-500">Global Discount</span>
+                                                <div className="flex items-center">
+                                                    <span className="mr-1 text-slate-600">-</span>
+                                                    <input
+                                                        type="number"
+                                                        value={formData.discount}
+                                                        onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                                                        className="bg-transparent text-right border-b border-slate-700 outline-none w-20 p-0 text-rose-400 focus:border-blue-500 transition-all font-bold"
+                                                        placeholder="0"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-slate-500">Round Off</span>
+                                                <div className="flex items-center">
+                                                    <span className="mr-1 text-slate-600">+/-</span>
+                                                    <input
+                                                        type="number"
+                                                        value={formData.round_off}
+                                                        onChange={(e) => setFormData({ ...formData, round_off: e.target.value })}
+                                                        className="bg-transparent text-right border-b border-slate-700 outline-none w-20 p-0 text-emerald-400 focus:border-blue-500 transition-all font-bold"
+                                                        placeholder="0"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="pt-4">
@@ -390,7 +457,7 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Plus,
@@ -224,18 +224,29 @@ const Banking = () => {
         }
     });
 
+    const { data: customers = [] } = useQuery({
+        queryKey: ['customers'],
+        queryFn: async () => {
+            const res = await api.get('/customers');
+            return Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        }
+    });
+
     const { data: paymentsList = [], isLoading: loadingPayments } = useQuery({
         queryKey: ['payments'],
         queryFn: async () => {
             const res = await api.get('/invoices/payments');
-            const rawData = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-            return rawData.map(p => ({
-                ...p,
-                invoice_number: p.invoice?.invoice_number || p.invoice?.reference || 'N/A',
-                customer_name: p.invoice?.customers?.name || p.invoice?.customer?.name || 'Walk-in Customer'
-            }));
+            return Array.isArray(res.data) ? res.data : (res.data?.data || []);
         }
     });
+
+    const paymentsWithDetails = useMemo(() => {
+        return paymentsList.map(p => ({
+            ...p,
+            invoice_number: p.invoice?.invoice_number || p.invoice?.reference || 'N/A',
+            customer_name: customers.find(c => c.id === p.invoice?.customer_id)?.name || 'Walk-in Customer'
+        }));
+    }, [paymentsList, customers]);
 
     const unpaidInvoices = invoices.filter(inv => {
         const paid = (inv.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -247,9 +258,9 @@ const Banking = () => {
         return sum + ((inv.total_amount || inv.total || 0) - paid);
     }, 0);
 
-    const totalCollected = paymentsList.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+    const totalCollected = paymentsWithDetails.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
 
-    const filteredHistory = paymentsList.filter(p => {
+    const filteredHistory = paymentsWithDetails.filter(p => {
         const matchSearch = (p.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()));
         if (activeTab === 'bank') return matchSearch && p.method !== 'cash';
@@ -442,7 +453,7 @@ const Banking = () => {
                                                 <div className="flex justify-between items-start mb-4">
                                                     <div>
                                                         <p className="text-sm font-black tracking-tight">{inv.invoice_number || inv.reference}</p>
-                                                        <p className="text-[10px] font-bold text-slate-500 uppercase mt-0.5">{inv.customer?.name || 'Walk-in'}</p>
+                                                        <p className="text-[10px] font-bold text-slate-500 uppercase mt-0.5">{customers.find(c => c.id === inv.customer_id)?.name || 'Walk-in'}</p>
                                                     </div>
                                                     <div className="bg-emerald-500/10 text-emerald-400 p-2 rounded-xl">
                                                         <ArrowUpRight className="w-4 h-4" />

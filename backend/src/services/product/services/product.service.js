@@ -31,6 +31,13 @@ exports.findBySku = async (sku) => {
 };
 
 /**
+ * Search products by Barcode
+ */
+exports.findByBarcode = async (barcode) => {
+  return prisma.products.findUnique({ where: { barcode } });
+};
+
+/**
  * Get products by group
  */
 exports.findByGroup = async (group) => {

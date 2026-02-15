@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit'); 
-const xss = require('xss-clean'); 
+const rateLimit = require('express-rate-limit');
+const xss = require('xss-clean');
 const hpp = require('hpp');
 
 // Import Microservices
@@ -11,9 +11,10 @@ const productRoutes = require('./services/product/routes/product.routes');
 const inventoryRoutes = require('./services/inventory/routes/inventory.routes');
 const salesRoutes = require('./services/sales/routes/sales.routes');
 const purchaseRoutes = require('./services/purchase/routes/purchase.routes');
+const supplierRoutes = require('./services/purchase/routes/supplier.routes');
 const invoiceRoutes = require('./services/invoice/routes/invoice.routes');
 
-const app = express(); 
+const app = express();
 
 // Security headers
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
@@ -21,9 +22,9 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 // CORS
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],
-  methods: ['GET','POST','PUT','PATCH','DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   credentials: true,
-  allowedHeaders: ['Content-Type','Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Rate limiting
@@ -45,7 +46,7 @@ app.use(hpp());
  */
 
 // Auth Service
-app.use('/api/auth', authRoutes); 
+app.use('/api/auth', authRoutes);
 
 // Product Service
 app.use('/api/products', productRoutes);
@@ -60,7 +61,7 @@ app.use('/api/customers', salesRoutes);
 
 // Purchase Service (Purchases + Suppliers)
 app.use('/api/purchases', purchaseRoutes);
-app.use('/api/suppliers', purchaseRoutes);
+app.use('/api/suppliers', supplierRoutes);
 
 // Invoice Service
 app.use('/api/invoices', invoiceRoutes);
@@ -70,8 +71,8 @@ require('./swagger')(app);
  * Health Check Endpoint
  */
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'API Gateway is running',
     uptime: process.uptime(),
     timestamp: new Date().toISOString()
@@ -105,10 +106,10 @@ app.get('/api/info', (req, res) => {
  */
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(err.status || 500).json({ 
-    success: false, 
-    message: err.message || 'Unexpected error', 
-    details: process.env.NODE_ENV === 'development' ? err.stack : undefined 
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Unexpected error',
+    details: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 

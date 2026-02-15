@@ -29,6 +29,7 @@ const ProductModal = ({ isOpen, onClose, onSuccess }) => {
         sku: '',
         group: '',
         category: '',
+        barcode: '',
         unit: 'Pcs',
         opening_qty: 0
     });
@@ -38,7 +39,7 @@ const ProductModal = ({ isOpen, onClose, onSuccess }) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: name === 'opening_qty' ? parseFloat(value) || 0 : value
+            [name]: name === 'opening_qty' ? parseInt(value) || 0 : value
         }));
     };
 
@@ -58,6 +59,7 @@ const ProductModal = ({ isOpen, onClose, onSuccess }) => {
                 sku: '',
                 group: '',
                 category: '',
+                barcode: '',
                 unit: 'Pcs',
                 opening_qty: 0
             });
@@ -131,6 +133,20 @@ const ProductModal = ({ isOpen, onClose, onSuccess }) => {
                                     placeholder="e.g., AIP-15P-128"
                                     className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900 uppercase"
                                     required
+                                />
+                            </div>
+
+                            <div className="group">
+                                <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+                                    <Tag className="w-3 h-3 mr-2" /> Barcode
+                                </label>
+                                <input
+                                    type="text"
+                                    name="barcode"
+                                    value={formData.barcode}
+                                    onChange={handleChange}
+                                    placeholder="e.g., 8901234567890"
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900"
                                 />
                             </div>
 
