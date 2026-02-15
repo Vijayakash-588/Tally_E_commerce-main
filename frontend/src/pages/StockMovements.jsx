@@ -13,7 +13,7 @@ const StockMovements = () => {
     const { data: stockItems = [], isLoading } = useQuery({
         queryKey: ['stock_items'],
         queryFn: async () => {
-            const res = await api.get('/stock_items');
+            const res = await api.get('/inventory');
             return Array.isArray(res.data) ? res.data : (res.data?.data || []);
         }
     });
@@ -37,7 +37,7 @@ const StockMovements = () => {
         quantity: item.quantity,
         type: item.type,
         reference: item.reference,
-        date: item.created_at,
+        date: item.txn_date || item.created_at,
         notes: item.notes
     }));
 

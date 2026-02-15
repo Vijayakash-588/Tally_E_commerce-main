@@ -46,7 +46,7 @@ const Invoices = () => {
         pending: invoices.filter(i => i.status === 'sent' || i.status === 'partial').length,
         overdue: invoices.filter(i => i.status === 'overdue').length,
         totalAmount: invoices.reduce((sum, i) => sum + (i.total_amount || 0), 0),
-        paidAmount: invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + (i.total_amount || 0), 0)
+        paidAmount: invoices.reduce((sum, i) => sum + (i.paid_amount || 0), 0)
     };
 
     return (
@@ -285,7 +285,7 @@ const Invoices = () => {
                                 <div className="space-y-2">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount Paid</p>
                                     <p className="text-2xl font-black text-green-600">
-                                        ₹{(selectedInvoice.amount_paid || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                        ₹{(selectedInvoice.paid_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                     </p>
                                 </div>
                             </div>

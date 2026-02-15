@@ -327,12 +327,7 @@ exports.getOverdue = async (req, res, next) => {
  */
 exports.getPayments = async (req, res, next) => {
   try {
-    const payments = await prisma.payments.findMany({
-      include: {
-        invoice: true
-      },
-      orderBy: { date: 'desc' }
-    });
+    const payments = await service.getPayments();
     res.json({ success: true, data: payments, count: payments.length });
   } catch (err) {
     next(err);

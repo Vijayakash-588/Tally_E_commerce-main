@@ -453,3 +453,15 @@ exports.getOverdueInvoices = async () => {
 exports.getTaxRates = async () => {
   return prisma.tax_rates.findMany({ orderBy: { created_at: 'desc' } });
 };
+
+/**
+ * Get all payments
+ */
+exports.getPayments = async () => {
+  return prisma.payments.findMany({
+    include: {
+      invoice: true
+    },
+    orderBy: { date: 'desc' }
+  });
+};
