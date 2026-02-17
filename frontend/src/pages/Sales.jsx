@@ -7,22 +7,18 @@ import {
     X,
     ArrowLeft,
     Search,
-    FileText,
-    Calendar,
-    User,
     ShoppingCart,
     DollarSign,
     Package,
-    ChevronDown,
-    Printer,
-    Trash
+    Calendar,
+    User
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import * as salesApi from '../api/sales';
+import * as invoicesApi from '../api/invoices';
 import * as customersApi from '../api/customers';
 import * as productsApi from '../api/products';
-import clsx from 'clsx';
+import api from '../api/axios';
 
 const SaleModal = ({ isOpen, onClose, sale }) => {
     const queryClient = useQueryClient();
@@ -39,27 +35,82 @@ const SaleModal = ({ isOpen, onClose, sale }) => {
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers'],
-        queryFn: async () => {
-            const res = await customersApi.getCustomers();
-            return Array.isArray(res.data) ? res.data : (res.data?.data || []);
-        }
+        queryFn: customersApi.getCustomers
     });
 
     const { data: products = [] } = useQuery({
         queryKey: ['products'],
+        queryFn: productsApi.getProducts
+    });
+
+    const { data: taxRates = [] } = useQuery({
+        queryKey: ['taxRates'],
         queryFn: async () => {
-            const res = await productsApi.getProducts();
+            const res = await api.get('/invoices/tax-rates');
             return Array.isArray(res.data) ? res.data : (res.data?.data || []);
         }
     });
 
+    // Populate form data when sale (invoice) is selected for editing
+    React.useEffect(() => {
+        if (sale) {
+            // If editing an existing invoice
+            const firstItem = sale.line_items?.[0] || {};
+            setFormData({
+                customer_id: sale.customer_id || '',
+                product_id: firstItem.product_id || '',
+                quantity: firstItem.quantity || 1,
+                unit_price: firstItem.unit_price || 0,
+                discount: sale.discount || 0,
+                tax_rate_id: firstItem.tax_rate_id || '',
+                round_off: sale.round_off || 0,
+                sale_date: sale.issue_date?.split('T')[0] || new Date().toISOString().split('T')[0]
+            });
+        } else {
+            // Reset for new sale
+            setFormData({
+                customer_id: '',
+                product_id: '',
+                quantity: 1,
+                unit_price: 0,
+                discount: 0,
+                tax_rate_id: '',
+                round_off: 0,
+                sale_date: new Date().toISOString().split('T')[0]
+            });
+        }
+    }, [sale]);
+
     const mutation = useMutation({
         mutationFn: (data) => {
-            if (sale?.id) return salesApi.updateSale(sale.id, data);
-            return salesApi.createSale(data);
+            // Calculate tax amount for the payload based on selected rate
+            const taxRate = taxRates.find(t => t.id === data.tax_rate_id);
+            const subtotal = data.quantity * data.unit_price;
+            const calculatedTax = taxRate ? subtotal * (taxRate.rate / 100) : 0;
+
+            // Construct the invoice payload
+            const payload = {
+                customer_id: data.customer_id,
+                issue_date: new Date(data.sale_date).toISOString(),
+                due_date: new Date(data.sale_date).toISOString(), // Immediate due for quick sales
+                items: [{
+                    product_id: data.product_id,
+                    quantity: parseInt(data.quantity),
+                    unit_price: parseFloat(data.unit_price),
+                    tax_rate_id: data.tax_rate_id // Pass tax_rate_id
+                }],
+                discount: parseFloat(data.discount),
+                tax: calculatedTax, // Pass calculated tax for Invoice header
+                round_off: parseFloat(data.round_off),
+                notes: 'Quick Sale via Sales Register',
+                status: 'SENT'
+            };
+
+            if (sale?.id) return invoicesApi.updateInvoice(sale.id, { ...payload, status: sale.status });
+            return invoicesApi.createInvoice(payload);
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['sales']);
+            queryClient.invalidateQueries(['invoices']); // Refetch invoices
             toast.success(sale ? 'Sale Updated' : 'Sale Recorded');
             onClose();
         },
@@ -68,17 +119,20 @@ const SaleModal = ({ isOpen, onClose, sale }) => {
 
     const handleProductChange = (productId) => {
         const product = products.find(p => p.id === productId);
-        setFormData({
-            ...formData,
+        setFormData(prev => ({
+            ...prev,
             product_id: productId,
             unit_price: product ? product.price || 0 : 0
-        });
+        }));
     };
 
     const calculateTotal = () => {
         const subtotal = formData.quantity * formData.unit_price;
         const discount = parseFloat(formData.discount) || 0;
-        const tax = parseFloat(formData.tax) || 0;
+
+        const taxRate = taxRates.find(t => t.id === formData.tax_rate_id);
+        const tax = taxRate ? subtotal * (taxRate.rate / 100) : 0;
+
         const roundOff = parseFloat(formData.round_off) || 0;
         return subtotal - discount + tax + roundOff;
     };
@@ -192,14 +246,17 @@ const SaleModal = ({ isOpen, onClose, sale }) => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Tax Amount</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                value={formData.tax}
-                                onChange={(e) => setFormData({ ...formData, tax: parseFloat(e.target.value) || 0 })}
-                                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900"
-                            />
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Tax Rate</label>
+                            <select
+                                value={formData.tax_rate_id}
+                                onChange={(e) => setFormData({ ...formData, tax_rate_id: e.target.value })}
+                                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900 appearance-none"
+                            >
+                                <option value="">Nil Rated</option>
+                                {taxRates.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name} ({t.rate}%)</option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="space-y-2">
@@ -247,10 +304,12 @@ const Sales = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSale, setSelectedSale] = useState(null);
+    const queryClient = useQueryClient();
 
+    // Fetch Invoices instead of Sales
     const { data: sales = [], isLoading } = useQuery({
-        queryKey: ['sales'],
-        queryFn: salesApi.getSales
+        queryKey: ['invoices'],
+        queryFn: invoicesApi.getInvoices
     });
 
     const { data: customers = [] } = useQuery({
@@ -270,9 +329,9 @@ const Sales = () => {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: salesApi.deleteSale,
+        mutationFn: invoicesApi.deleteInvoice,
         onSuccess: () => {
-            queryClient.invalidateQueries(['sales']);
+            queryClient.invalidateQueries(['invoices']);
             toast.success('Sale deleted');
         },
         onError: () => toast.error('Failed to delete sale')
@@ -287,17 +346,18 @@ const Sales = () => {
     };
 
     const filtered = sales.filter(sale => {
+        const product_id = sale.line_items?.[0]?.product_id;
         const matchesSearch =
             getCustomerName(sale.customer_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
-            getProductName(sale.product_id).toLowerCase().includes(searchTerm.toLowerCase()) ||
-            sale.id.toLowerCase().includes(searchTerm.toLowerCase());
+            (product_id && getProductName(product_id).toLowerCase().includes(searchTerm.toLowerCase())) ||
+            sale.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
     });
 
     const stats = {
         total: sales.length,
-        totalAmount: sales.reduce((sum, s) => sum + (parseFloat(s.total) || 0), 0),
-        todaySales: sales.filter(s => new Date(s.sale_date).toDateString() === new Date().toDateString()).length
+        totalAmount: sales.reduce((sum, s) => sum + (parseFloat(s.total_amount) || 0), 0),
+        todaySales: sales.filter(s => new Date(s.issue_date).toDateString() === new Date().toDateString()).length
     };
 
     return (
@@ -318,7 +378,7 @@ const Sales = () => {
                     </div>
                 </div>
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => { setSelectedSale(null); setIsModalOpen(true); }}
                     className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2"
                 >
                     <Plus className="w-4 h-4" />
@@ -375,7 +435,7 @@ const Sales = () => {
                         <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
                         <input
                             type="text"
-                            placeholder="Search sales by customer, product, or ID..."
+                            placeholder="Search sales by customer, product, or Invoice No..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-medium text-slate-900"
@@ -411,7 +471,7 @@ const Sales = () => {
                         <table className="w-full">
                             <thead className="bg-slate-50">
                                 <tr>
-                                    <th className="px-6 py-4 text-left text-xs font-black text-slate-400 uppercase tracking-widest">Date</th>
+                                    <th className="px-6 py-4 text-left text-xs font-black text-slate-400 uppercase tracking-widest">Date / Ref</th>
                                     <th className="px-6 py-4 text-left text-xs font-black text-slate-400 uppercase tracking-widest">Customer</th>
                                     <th className="px-6 py-4 text-left text-xs font-black text-slate-400 uppercase tracking-widest">Product</th>
                                     <th className="px-6 py-4 text-left text-xs font-black text-slate-400 uppercase tracking-widest">Quantity</th>
@@ -420,60 +480,74 @@ const Sales = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.map((sale) => (
-                                    <tr key={sale.id} className="border-t border-slate-50 hover:bg-slate-50/50 transition-all">
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-slate-900">
-                                                {new Date(sale.sale_date).toLocaleDateString('en-IN')}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-slate-900">
-                                                {getCustomerName(sale.customer_id)}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-slate-900">
-                                                {getProductName(sale.product_id)}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-slate-900">
-                                                {sale.quantity}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-green-600">
-                                                ₹{parseFloat(sale.total || 0).toLocaleString('en-IN')}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedSale(sale);
-                                                        setIsModalOpen(true);
-                                                    }}
-                                                    className="p-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg transition-all"
-                                                    title="Edit Sale"
-                                                >
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        if (window.confirm('Delete this sale?')) {
-                                                            deleteMutation.mutate(sale.id);
-                                                        }
-                                                    }}
-                                                    className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-all"
-                                                    title="Delete Sale"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {filtered.map((sale) => {
+                                    const firstItem = sale.line_items?.[0] || {};
+                                    const itemCount = sale.line_items?.length || 0;
+                                    const productName = getProductName(firstItem.product_id);
+
+                                    return (
+                                        <tr key={sale.id} className="border-t border-slate-50 hover:bg-slate-50/50 transition-all">
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-900">
+                                                    {new Date(sale.issue_date).toLocaleDateString('en-IN')}
+                                                </div>
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase">
+                                                    {sale.invoice_number}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-900">
+                                                    {getCustomerName(sale.customer_id)}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-900">
+                                                    {productName}
+                                                </div>
+                                                {itemCount > 1 && (
+                                                    <div className="text-[10px] text-blue-500 font-bold uppercase">
+                                                        + {itemCount - 1} more items
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-900">
+                                                    {firstItem.quantity || '-'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-green-600">
+                                                    ₹{parseFloat(sale.total_amount || 0).toLocaleString('en-IN')}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedSale(sale);
+                                                            setIsModalOpen(true);
+                                                        }}
+                                                        className="p-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg transition-all"
+                                                        title="Edit Sale"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (window.confirm('Delete this sale?')) {
+                                                                deleteMutation.mutate(sale.id);
+                                                            }
+                                                        }}
+                                                        className="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg transition-all"
+                                                        title="Delete Sale"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

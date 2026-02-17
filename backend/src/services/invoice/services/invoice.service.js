@@ -55,7 +55,9 @@ exports.createInvoice = async (data) => {
       let taxAmount = 0;
 
       // If a raw tax rate percentage is provided use it, otherwise resolve by tax_rate_id
-      if (it.tax_rate_percent != null) {
+      if (it.tax_amount !== undefined) {
+        taxAmount = Number(it.tax_amount) || 0;
+      } else if (it.tax_rate_percent != null) {
         const pct = Number(it.tax_rate_percent) || 0;
         taxAmount = +(base * (pct / 100));
       } else if (it.tax_rate_id) {
