@@ -142,16 +142,18 @@ const PaymentVoucherModal = ({ isOpen, onClose, selectedInvoice, unpaidInvoices 
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Transaction Ref / ID</label>
-                            <input
-                                type="text"
-                                value={formData.reference}
-                                onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
-                                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all font-bold text-slate-900"
-                                placeholder="UTR, Cheque No, etc."
-                            />
-                        </div>
+                        {formData.method !== 'cash' && (
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Transaction Ref / ID</label>
+                                <input
+                                    type="text"
+                                    value={formData.reference}
+                                    onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                                    className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all font-bold text-slate-900"
+                                    placeholder="UTR, Cheque No, etc."
+                                />
+                            </div>
+                        )}
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Narration</label>
