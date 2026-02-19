@@ -650,6 +650,7 @@ const Invoices = () => {
                             ) : (
                                 filtered.map((invoice) => {
                                     const sCfg = STATUS_CONFIG[invoice.status?.toLowerCase()] || STATUS_CONFIG.draft;
+                                    const StatusIcon = sCfg.icon;
                                     const bal = (invoice.total_amount || 0) - (invoice.paid_amount || 0);
                                     return (
                                         <tr key={invoice.id} className="hover:bg-slate-50/80 transition-all group">
@@ -672,7 +673,7 @@ const Invoices = () => {
                                                         <Calendar className="w-3 h-3 text-slate-300" />
                                                         {invoice.issue_date ? new Date(invoice.issue_date).toLocaleDateString('en-IN') : '-'}
                                                     </div>
-                                                    <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-4.5">
+                                                    <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest ml-4">
                                                         Due &middot; {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-IN') : '-'}
                                                     </div>
                                                 </div>
@@ -685,7 +686,7 @@ const Invoices = () => {
                                             </td>
                                             <td className="px-8 py-6 whitespace-nowrap text-center">
                                                 <span className={clsx('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm', sCfg.color)}>
-                                                    <sCfg.icon className="w-3 h-3" />
+                                                    <StatusIcon className="w-3 h-3" />
                                                     {sCfg.label}
                                                 </span>
                                             </td>

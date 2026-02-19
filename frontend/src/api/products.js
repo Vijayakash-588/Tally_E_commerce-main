@@ -34,3 +34,8 @@ export const deleteProduct = async (id) => {
     const response = await api.delete(`/products/${id}`);
     return response.data;
 };
+
+export const toggleProductStatus = async (id) => {
+    const response = await api.patch(`/products/${id}/toggle`);
+    return response.data;
+};

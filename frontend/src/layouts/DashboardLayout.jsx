@@ -109,28 +109,31 @@ const DashboardLayout = () => {
                             { title: "Customers", sub: "Manage Customers", icon: Users, color: "bg-green-600", to: "/customers" },
                             { title: "Suppliers", sub: "Manage Suppliers", icon: Truck, color: "bg-purple-600", to: "/suppliers" },
                             { title: "AI Assistant", sub: "Chat with AI", icon: Bot, color: "bg-gradient-to-br from-blue-600 to-violet-600", to: "/ai-chat" },
-                        ].map((item, idx) => (
-                            <NavLink
-                                key={idx}
-                                to={item.to}
-                                className={({ isActive }) => clsx(
-                                    "group flex items-center p-3 rounded-2xl transition-all duration-300 border border-transparent mb-1",
-                                    isActive ? "bg-blue-50/50 border-blue-100 shadow-sm" : "hover:bg-slate-50"
-                                )}
-                            >
-                                <div className={clsx(
-                                    "w-10 h-10 rounded-xl flex items-center justify-center mr-3.5 transition-transform group-hover:scale-105 shadow-md",
-                                    item.color
-                                )}>
-                                    <item.icon className="w-5 h-5 text-white" />
-                                </div>
-                                <div className="flex-1 overflow-hidden">
-                                    <h3 className="text-sm font-black text-slate-900 truncate">{item.title}</h3>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter truncate">{item.sub}</p>
-                                </div>
-                                <ChevronRight className="w-4 h-4 ml-1 text-slate-200 group-hover:text-slate-900 transition-colors" />
-                            </NavLink>
-                        ))}
+                        ].map((item, idx) => {
+                            const NavIcon = item.icon;
+                            return (
+                                <NavLink
+                                    key={idx}
+                                    to={item.to}
+                                    className={({ isActive }) => clsx(
+                                        "group flex items-center p-3 rounded-2xl transition-all duration-300 border border-transparent mb-1",
+                                        isActive ? "bg-blue-50/50 border-blue-100 shadow-sm" : "hover:bg-slate-50"
+                                    )}
+                                >
+                                    <div className={clsx(
+                                        "w-10 h-10 rounded-xl flex items-center justify-center mr-3.5 transition-transform group-hover:scale-105 shadow-md",
+                                        item.color
+                                    )}>
+                                        <NavIcon className="w-5 h-5 text-white" />
+                                    </div>
+                                    <div className="flex-1 overflow-hidden">
+                                        <h3 className="text-sm font-black text-slate-900 truncate">{item.title}</h3>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter truncate">{item.sub}</p>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 ml-1 text-slate-200 group-hover:text-slate-900 transition-colors" />
+                                </NavLink>
+                            );
+                        })}
 
                         <div className="h-px bg-slate-100 my-4 mx-3"></div>
 
@@ -159,13 +162,13 @@ const DashboardLayout = () => {
                         </button>
                     </div>
                 </div>
-            </aside>
+            </aside >
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            < div className="flex-1 flex flex-col min-w-0 overflow-hidden" >
 
                 {/* Professional Header */}
-                <header className="h-20 bg-white border-b border-slate-200/60 flex items-center px-6 sm:px-10 justify-between sticky top-0 z-40">
+                < header className="h-20 bg-white border-b border-slate-200/60 flex items-center px-6 sm:px-10 justify-between sticky top-0 z-40" >
                     <div className="flex items-center flex-1 min-w-0">
                         <button
                             onClick={() => setSidebarOpen(true)}
@@ -207,19 +210,19 @@ const DashboardLayout = () => {
 
                         <div className="h-8 w-px bg-slate-100 mx-1"></div>
                     </div>
-                </header>
+                </header >
 
                 {/* High Contrast Content Area */}
-                <main className="flex-1 overflow-auto p-6 sm:p-10 relative bg-[#F8FAFC]">
+                < main className="flex-1 overflow-auto p-6 sm:p-10 relative bg-[#F8FAFC]" >
                     {/* Subtle Grid Pattern Overlay */}
-                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none" />
+                    < div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] pointer-events-none" />
 
                     <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>
-                </main>
-            </div>
-        </div>
+                </main >
+            </div >
+        </div >
     );
 };
 

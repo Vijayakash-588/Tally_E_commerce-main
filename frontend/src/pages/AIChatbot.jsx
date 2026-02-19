@@ -199,16 +199,19 @@ const AIChatbot = () => {
 
             {/* Suggestions bar */}
             <div className="bg-slate-50/80 border-b border-slate-100 px-6 sm:px-10 py-3 flex gap-2 overflow-x-auto flex-shrink-0 scrollbar-hide">
-                {SUGGESTIONS.map((s, i) => (
-                    <button
-                        key={i}
-                        onClick={() => sendMessage(s.label)}
-                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border whitespace-nowrap transition-all flex-shrink-0 ${s.bg}`}
-                    >
-                        <s.icon className={`w-3.5 h-3.5 ${s.color}`} />
-                        <span className="text-slate-700">{s.label}</span>
-                    </button>
-                ))}
+                {SUGGESTIONS.map((s, i) => {
+                    const SuggestionIcon = s.icon;
+                    return (
+                        <button
+                            key={i}
+                            onClick={() => sendMessage(s.label)}
+                            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border whitespace-nowrap transition-all flex-shrink-0 ${s.bg}`}
+                        >
+                            <SuggestionIcon className={`w-3.5 h-3.5 ${s.color}`} />
+                            <span className="text-slate-700">{s.label}</span>
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Messages */}
@@ -217,8 +220,8 @@ const AIChatbot = () => {
                     <div key={msg.id} className={`flex gap-3 msg-enter ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                         {/* Avatar */}
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${msg.role === 'assistant'
-                                ? 'bg-gradient-to-br from-blue-600 to-violet-600 shadow-blue-600/20'
-                                : 'bg-gradient-to-br from-slate-700 to-slate-900 shadow-slate-900/10'
+                            ? 'bg-gradient-to-br from-blue-600 to-violet-600 shadow-blue-600/20'
+                            : 'bg-gradient-to-br from-slate-700 to-slate-900 shadow-slate-900/10'
                             }`}>
                             {msg.role === 'assistant'
                                 ? <Bot className="w-4 h-4 text-white" />
@@ -229,8 +232,8 @@ const AIChatbot = () => {
                         {/* Bubble */}
                         <div className={`max-w-[75%] flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                             <div className={`px-4 py-3 rounded-2xl shadow-sm ${msg.role === 'user'
-                                    ? 'bg-gradient-to-br from-blue-600 to-violet-600 text-white rounded-tr-sm'
-                                    : 'bg-white border border-slate-200/60 text-slate-800 rounded-tl-sm'
+                                ? 'bg-gradient-to-br from-blue-600 to-violet-600 text-white rounded-tr-sm'
+                                : 'bg-white border border-slate-200/60 text-slate-800 rounded-tl-sm'
                                 }`}>
                                 {msg.role === 'assistant'
                                     ? <BubbleContent text={msg.text} />
