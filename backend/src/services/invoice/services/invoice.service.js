@@ -141,6 +141,7 @@ exports.createInvoice = async (data) => {
 exports.findAllInvoices = async () => {
   return prisma.invoices.findMany({
     include: {
+      customer: true,
       line_items: true,
       payments: true,
     },
@@ -155,7 +156,10 @@ exports.findInvoiceById = async (id) => {
   return prisma.invoices.findUnique({
     where: { id },
     include: {
-      line_items: true,
+      customer: true,
+      line_items: {
+        include: { products: true }
+      },
       payments: true,
     }
   });
@@ -181,6 +185,7 @@ exports.findByCustomer = async (customerId) => {
   return prisma.invoices.findMany({
     where: { customer_id: customerId },
     include: {
+      customer: true,
       line_items: true,
       payments: true
     },
@@ -195,6 +200,7 @@ exports.findByStatus = async (status) => {
   return prisma.invoices.findMany({
     where: { status },
     include: {
+      customer: true,
       line_items: true,
       payments: true
     },
@@ -249,6 +255,7 @@ exports.updateStatus = async (id, status) => {
       updated_at: new Date()
     },
     include: {
+      customer: true,
       line_items: true,
       payments: true
     }

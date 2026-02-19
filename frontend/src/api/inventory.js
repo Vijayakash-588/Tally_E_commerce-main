@@ -46,3 +46,8 @@ export const deleteStockMovement = async (id) => {
     const response = await api.delete(`/stock_items/${id}`);
     return response.data;
 };
+
+export const getStockLevels = async () => {
+    const response = await api.get('/inventory/levels');
+    return response.data?.data || [];
+};

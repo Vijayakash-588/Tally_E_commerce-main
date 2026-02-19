@@ -105,6 +105,7 @@ const DashboardLayout = () => {
                             { title: "Stock Summary", sub: "Inventory", icon: Package, color: "bg-amber-600", to: "/inventory" },
                             { title: "Products", sub: "Product Catalog", icon: ShoppingBag, color: "bg-rose-600", to: "/products" },
                             { title: "Stock Movements", sub: "Track Movement", icon: TrendingUp, color: "bg-teal-600", to: "/stock-movements" },
+                            { title: "Stock Levels", sub: "Live Stock View", icon: BarChart3, color: "bg-orange-600", to: "/stock-levels" },
                             { title: "Customers", sub: "Manage Customers", icon: Users, color: "bg-green-600", to: "/customers" },
                             { title: "Suppliers", sub: "Manage Suppliers", icon: Truck, color: "bg-purple-600", to: "/suppliers" },
                             { title: "AI Assistant", sub: "Chat with AI", icon: Bot, color: "bg-gradient-to-br from-blue-600 to-violet-600", to: "/ai-chat" },

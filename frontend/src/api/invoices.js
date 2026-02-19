@@ -44,3 +44,23 @@ export const updateInvoiceStatus = async (id, status) => {
     const response = await api.patch(`/invoices/${id}/status`, { status });
     return response.data?.data || response.data;
 };
+
+export const sendInvoice = async (id) => {
+    const response = await api.post(`/invoices/${id}/send`);
+    return response.data?.data || response.data;
+};
+
+export const recordPayment = async (id, data) => {
+    const response = await api.post(`/invoices/${id}/payment`, data);
+    return response.data?.data || response.data;
+};
+
+export const getInvoiceLineItems = async (id) => {
+    const response = await api.get(`/invoices/${id}/items`);
+    return response.data?.data || [];
+};
+
+export const getTaxRates = async () => {
+    const response = await api.get('/invoices/tax-rates');
+    return response.data?.data || [];
+};

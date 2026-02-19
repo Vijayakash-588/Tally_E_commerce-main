@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { Plus, Search, Edit, Trash2, X, ArrowLeft, Tag, Layers } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, X, ArrowLeft, Tag, Layers, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getProducts, createProduct, updateProduct, deleteProduct } from '../api/products';
+import { getProducts, createProduct, updateProduct, deleteProduct, toggleProductStatus } from '../api/products';
 import clsx from 'clsx';
 
 const ProductModal = ({ isOpen, onClose, product }) => {
@@ -215,6 +215,17 @@ const Products = () => {
         }
     });
 
+    const toggleMutation = useMutation({
+        mutationFn: toggleProductStatus,
+        onSuccess: (data) => {
+            queryClient.invalidateQueries(['products']);
+            toast.success(`Product status updated`);
+        },
+        onError: () => {
+            toast.error('Failed to toggle product status');
+        }
+    });
+
     const handleEdit = (product) => {
         setSelectedProduct(product);
         setIsModalOpen(true);
@@ -321,14 +332,22 @@ const Products = () => {
                                             {product.opening_qty} {product.unit}
                                         </td>
                                         <td className="px-8 py-5 whitespace-nowrap text-center">
-                                            <span className={clsx(
-                                                "inline-flex items-center px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider",
-                                                product.is_active
-                                                    ? 'bg-green-100 text-green-700'
-                                                    : 'bg-slate-100 text-slate-600'
-                                            )}>
+                                            <button
+                                                onClick={() => toggleMutation.mutate(product.id)}
+                                                disabled={toggleMutation.isPending}
+                                                className={clsx(
+                                                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider transition-all hover:scale-105 disabled:opacity-50",
+                                                    product.is_active
+                                                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                                )}
+                                                title={product.is_active ? 'Click to deactivate' : 'Click to activate'}
+                                            >
+                                                {product.is_active
+                                                    ? <ToggleRight className="w-4 h-4" />
+                                                    : <ToggleLeft className="w-4 h-4" />}
                                                 {product.is_active ? 'Active' : 'Inactive'}
-                                            </span>
+                                            </button>
                                         </td>
                                         <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex items-center justify-end gap-3">
