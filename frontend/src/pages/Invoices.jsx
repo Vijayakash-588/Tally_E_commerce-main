@@ -69,15 +69,15 @@ const InvoiceFormModal = ({ onClose, customers, products }) => {
             const items = lineItems
                 .filter(r => r.product_id && r.quantity)
                 .map(r => ({
-                    productId: r.product_id,
+                    product_id: r.product_id,
                     quantity: parseFloat(r.quantity),
-                    unitPrice: parseFloat(r.unit_price) || 0,
+                    unit_price: parseFloat(r.unit_price) || 0,
                 }));
 
             return createInvoice({
-                customerId: formData.customer_id,
-                issueDate: new Date(formData.issue_date).toISOString(),
-                dueDate: new Date(formData.due_date).toISOString(),
+                customer_id: formData.customer_id,
+                issue_date: new Date(formData.issue_date).toISOString(),
+                due_date: new Date(formData.due_date).toISOString(),
                 notes: formData.notes,
                 items,
             });
