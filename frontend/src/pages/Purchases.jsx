@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api/axios';
 import clsx from 'clsx';
+import { useSearch } from '../context/SearchContext';
 
 const Sparkline = ({ color }) => (
     <div className="h-8 w-24">
@@ -71,6 +72,7 @@ const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass, s
 
 const Purchases = () => {
     const navigate = useNavigate();
+    const { searchTerm, setSearchTerm } = useSearch();
     const [purchases, setPurchases] = useState([]);
     const [stats, setStats] = useState({
         totalPurchases: 0,
@@ -138,8 +140,16 @@ const Purchases = () => {
     });
 
     useEffect(() => {
-        if (purchasesList) setPurchases(purchasesList);
-    }, [purchasesList]);
+        if (purchasesList) {
+            const filtered = purchasesList.filter(p => {
+                const supplierName = suppliers.find(s => s.id === p.supplier_id)?.name || '';
+                const productName = products.find(prod => prod.id === p.product_id)?.name || '';
+                return supplierName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    productName.toLowerCase().includes(searchTerm.toLowerCase());
+            });
+            setPurchases(filtered);
+        }
+    }, [purchasesList, searchTerm, suppliers, products]);
 
     const calculateTotal = (items, discount = 0, tax = 0, roundOff = 0) => {
         const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -378,18 +388,26 @@ const Purchases = () => {
 
             {/* Transaction Ledger Table */}
             <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-                <div className="px-10 py-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center">
-                        <FileText className="w-4 h-4 mr-3 text-blue-600" />
-                        Purchase History
-                    </h3>
-                    <div className="flex-1 max-w-md w-full relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div className="px-10 py-8 border-b border-slate-50">
+                    <div className="relative group w-full">
+                        <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                            <Search className="w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                        </div>
                         <input
                             type="text"
-                            placeholder="Search by supplier..."
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-300 outline-none transition-all font-bold text-xs"
+                            placeholder="Search by supplier or product..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-16 pr-6 py-5 bg-white border-2 border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-black text-slate-900 shadow-sm placeholder:text-slate-400"
                         />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute inset-y-0 right-6 flex items-center text-slate-300 hover:text-slate-600 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        )}
                     </div>
                 </div>
                 <div className="overflow-x-auto">

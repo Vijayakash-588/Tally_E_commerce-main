@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSearch } from '../context/SearchContext';
 import {
     Wallet,
     Landmark,
@@ -14,7 +15,9 @@ import {
     Plus,
     History,
     FileText,
-    Zap
+    Zap,
+    Search,
+    X
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import api from '../api/axios';
@@ -128,6 +131,7 @@ const TransactionRow = ({ date, type, reference, party, amount, typeColors }) =>
 );
 
 const Dashboard = () => {
+    const { searchTerm, setSearchTerm } = useSearch();
     const [stats, setStats] = useState({
         totalSales: 0,
         totalPurchases: 0,
@@ -200,6 +204,15 @@ const Dashboard = () => {
 
         fetchDashboardData();
     }, []);
+
+    const filteredTransactions = useMemo(() => {
+        if (!searchTerm) return recentTransactions;
+        return recentTransactions.filter(txn =>
+            txn.party.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            txn.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            txn.type.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [recentTransactions, searchTerm]);
 
     const typeColors = {
         'Sales': 'bg-emerald-50 text-emerald-600',
@@ -286,19 +299,42 @@ const Dashboard = () => {
                 {/* Recent Activities Table - Now Full Width */}
                 <div className="w-full">
                     <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden h-full flex flex-col hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-500">
-                        <div className="p-10 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div>
-                                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Recent Activity</h3>
-                                <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-tighter">Real-time ledger entries and voucher history</p>
+                        <div className="p-10 pb-6 space-y-6">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">Recent Activity</h3>
+                                    <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-tighter">Real-time ledger entries and voucher history</p>
+                                </div>
+                                <div className="flex items-center space-x-3">
+                                    <button className="px-6 py-3 bg-slate-50 text-slate-600 rounded-[1.25rem] text-xs font-black uppercase hover:bg-slate-100 transition-all border border-slate-100 flex items-center">
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Export Data
+                                    </button>
+                                    <button className="px-6 py-3 bg-blue-50 text-blue-600 rounded-[1.25rem] text-xs font-black uppercase hover:bg-blue-100 transition-all border border-blue-100">
+                                        View Analytics
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex items-center space-x-3">
-                                <button className="px-6 py-3 bg-slate-50 text-slate-600 rounded-[1.25rem] text-xs font-black uppercase hover:bg-slate-100 transition-all border border-slate-100 flex items-center">
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Export Data
-                                </button>
-                                <button className="px-6 py-3 bg-blue-50 text-blue-600 rounded-[1.25rem] text-xs font-black uppercase hover:bg-blue-100 transition-all border border-blue-100">
-                                    View Analytics
-                                </button>
+
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                                    <Search className="w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Search activity by party, reference or voucher type..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-16 pr-6 py-5 bg-slate-50 border-2 border-transparent rounded-[2rem] focus:bg-white focus:border-blue-500 focus:ring-8 focus:ring-blue-50 transition-all outline-none font-black text-slate-900 shadow-inner placeholder:text-slate-400"
+                                />
+                                {searchTerm && (
+                                    <button
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute inset-y-0 right-6 flex items-center text-slate-300 hover:text-slate-600 transition-colors"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -314,8 +350,8 @@ const Dashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50 text-slate-800">
-                                    {recentTransactions.length > 0 ? (
-                                        recentTransactions.map((txn, idx) => (
+                                    {filteredTransactions.length > 0 ? (
+                                        filteredTransactions.map((txn, idx) => (
                                             <TransactionRow
                                                 key={idx}
                                                 date={txn.date}

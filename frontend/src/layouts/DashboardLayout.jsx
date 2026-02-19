@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSearch } from '../context/SearchContext';
 import {
     LayoutDashboard,
     FileText,
@@ -52,8 +53,21 @@ const SidebarItem = ({ to, icon: Icon, children, active }) => {
 
 const DashboardLayout = () => {
     const { logout, user } = useAuth();
+    const { searchTerm, setSearchTerm } = useSearch();
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // Keyboard shortcut for search
+    React.useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.altKey && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                document.getElementById('global-search')?.focus();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900">
@@ -190,8 +204,11 @@ const DashboardLayout = () => {
                                 <Search className="h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                             </div>
                             <input
+                                id="global-search"
                                 type="text"
                                 placeholder="Search ledgers, reports, vouchers... (Alt+S)"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
                                 className="block w-full pl-11 pr-4 py-2.5 border border-slate-100 rounded-xl bg-slate-50/50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-4 focus:ring-blue-100/40 focus:border-blue-300 transition-all font-bold text-xs shadow-sm"
                             />
                         </div>

@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import {
-    FileText, Search, Calendar, DollarSign, User, ArrowLeft, Eye, Plus,
-    X, Send, CreditCard, CheckCircle, AlertCircle, Clock, Ban, List, Download, RefreshCcw
-} from 'lucide-react';
+import { Trash2, Edit2, Play, CheckCircle, Clock, Save, X, Plus, Search, FileDown, Send, CreditCard, ChevronRight, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
+import { useSearch } from '../context/SearchContext';
 import {
     getInvoices, createInvoice, updateInvoiceStatus, sendInvoice,
     recordPayment, getInvoiceLineItems
@@ -501,7 +499,8 @@ const InfoField = ({ label, value, children, large }) => (
 
 const Invoices = () => {
     const navigate = useNavigate();
-    const [searchTerm, setSearchTerm] = useState('');
+    const { searchTerm, setSearchTerm } = useSearch();
+    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -591,15 +590,25 @@ const Invoices = () => {
             <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
                 <div className="p-8 border-b border-slate-50">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="relative">
-                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                        <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                                <Search className="w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                            </div>
                             <input
                                 type="text"
                                 placeholder="Search by invoice number or customer..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-14 pr-5 py-4 bg-slate-50 border border-transparent rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900 shadow-inner"
+                                className="w-full pl-16 pr-6 py-5 bg-white border-2 border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-black text-slate-900 shadow-sm placeholder:text-slate-400"
                             />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="absolute inset-y-0 right-6 flex items-center text-slate-300 hover:text-slate-600 transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            )}
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden min-w-[160px]">

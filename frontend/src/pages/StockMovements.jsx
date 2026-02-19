@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
+import { useSearch } from '../context/SearchContext';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowUp, ArrowDown, Search, ArrowLeft, TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { ArrowUp, ArrowDown, Search, ArrowLeft, TrendingUp, TrendingDown, Activity, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import clsx from 'clsx';
 
 const StockMovements = () => {
     const navigate = useNavigate();
-    const [searchTerm, setSearchTerm] = useState('');
+    const { searchTerm, setSearchTerm } = useSearch();
     const [filterType, setFilterType] = useState('all');
 
     const { data: stockItems = [], isLoading } = useQuery({
@@ -118,15 +119,25 @@ const StockMovements = () => {
             <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
                 <div className="p-8 border-b border-slate-100">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="relative">
-                            <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                        <div className="relative group">
+                            <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                                <Search className="w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                            </div>
                             <input
                                 type="text"
                                 placeholder="Search by product or reference..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-14 pr-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900"
+                                className="w-full pl-16 pr-6 py-5 bg-white border-2 border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-black text-slate-900 shadow-sm placeholder:text-slate-400"
                             />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="absolute inset-y-0 right-6 flex items-center text-slate-300 hover:text-slate-600 transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            )}
                         </div>
                         <select
                             value={filterType}

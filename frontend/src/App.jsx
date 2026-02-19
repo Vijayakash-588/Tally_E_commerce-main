@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
+import { SearchProvider } from './context/SearchContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './layouts/DashboardLayout';
 import Login from './pages/Login';
@@ -25,33 +26,35 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <Toaster position="top-right" />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+        <SearchProvider>
+          <Toaster position="top-right" />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          <Route element={<ProtectedRoute />}>
-            <Route element={<DashboardLayout />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/sales" element={<Sales />} />
-              <Route path="/sales-invoices" element={<SalesInvoice />} />
-              <Route path="/purchases" element={<Purchases />} />
-              <Route path="/customers" element={<Customers />} />
-              <Route path="/suppliers" element={<Suppliers />} />
-              <Route path="/banking" element={<Banking />} />
-              <Route path="/invoices" element={<Invoices />} />
-              <Route path="/stock-movements" element={<StockMovements />} />
-              <Route path="/reports/profit-loss" element={<ProfitLoss />} />
-              <Route path="/inventory" element={<StockSummary />} />
-              <Route path="/active-stock" element={<StockSummary />} />
-              <Route path="/ai-chat" element={<AIChatbot />} />
-              <Route path="/stock-levels" element={<StockLevels />} />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<DashboardLayout />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/sales" element={<Sales />} />
+                <Route path="/sales-invoices" element={<SalesInvoice />} />
+                <Route path="/purchases" element={<Purchases />} />
+                <Route path="/customers" element={<Customers />} />
+                <Route path="/suppliers" element={<Suppliers />} />
+                <Route path="/banking" element={<Banking />} />
+                <Route path="/invoices" element={<Invoices />} />
+                <Route path="/stock-movements" element={<StockMovements />} />
+                <Route path="/reports/profit-loss" element={<ProfitLoss />} />
+                <Route path="/inventory" element={<StockSummary />} />
+                <Route path="/active-stock" element={<StockSummary />} />
+                <Route path="/ai-chat" element={<AIChatbot />} />
+                <Route path="/stock-levels" element={<StockLevels />} />
+              </Route>
             </Route>
-          </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </SearchProvider>
       </AuthProvider>
     </Router>
   );

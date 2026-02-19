@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api/axios';
 import clsx from 'clsx';
+import { useSearch } from '../context/SearchContext';
 
 const InvoiceModal = ({ isOpen, onClose, invoice }) => {
     const queryClient = useQueryClient();
@@ -465,7 +466,7 @@ const SalesInvoice = () => {
     const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const { searchTerm, setSearchTerm } = useSearch();
 
     const queryClient = useQueryClient();
 
@@ -534,14 +535,24 @@ const SalesInvoice = () => {
             {/* Register Filters */}
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-6 items-center">
                 <div className="flex-1 relative group w-full">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-all" />
+                    <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                        <Search className="w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                    </div>
                     <input
                         type="text"
                         placeholder="Filter by Voucher No., Customer Name or Narrative..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-16 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900"
+                        className="w-full pl-16 pr-6 py-5 bg-white border-2 border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-black text-slate-900 shadow-sm placeholder:text-slate-400"
                     />
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute inset-y-0 right-6 flex items-center text-slate-300 hover:text-slate-600 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    )}
                 </div>
                 <div className="flex items-center space-x-4 px-6 border-l border-slate-100 h-10 hidden md:flex">
                     <div className="text-right">

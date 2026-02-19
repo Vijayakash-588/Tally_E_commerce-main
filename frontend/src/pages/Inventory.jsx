@@ -21,6 +21,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
+import { useSearch } from '../context/SearchContext';
 
 // Modal Component for Adding New Product
 const ProductModal = ({ isOpen, onClose, onSuccess }) => {
@@ -234,7 +235,7 @@ const Inventory = () => {
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const { searchTerm, setSearchTerm } = useSearch();
     const [filterGroup, setFilterGroup] = useState('All');
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -352,14 +353,24 @@ const Inventory = () => {
             {/* Advanced Filters */}
             <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                 <div className="md:col-span-6 lg:col-span-7 relative group">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-all" />
+                    <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                        <Search className="w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                    </div>
                     <input
                         type="text"
                         placeholder="Search stock by item name, SKU code or description..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-16 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-bold text-slate-900"
+                        className="w-full pl-16 pr-6 py-5 bg-white border-2 border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-black text-slate-900 shadow-sm placeholder:text-slate-400"
                     />
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute inset-y-0 right-6 flex items-center text-slate-300 hover:text-slate-600 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    )}
                 </div>
 
                 <div className="md:col-span-3 lg:col-span-3 relative">

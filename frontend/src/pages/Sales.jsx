@@ -19,6 +19,7 @@ import * as invoicesApi from '../api/invoices';
 import * as customersApi from '../api/customers';
 import * as productsApi from '../api/products';
 import api from '../api/axios';
+import { useSearch } from '../context/SearchContext';
 
 const SaleModal = ({ isOpen, onClose, sale }) => {
     const queryClient = useQueryClient();
@@ -301,7 +302,7 @@ const SaleModal = ({ isOpen, onClose, sale }) => {
 
 const Sales = () => {
     const navigate = useNavigate();
-    const [searchTerm, setSearchTerm] = useState('');
+    const { searchTerm, setSearchTerm } = useSearch();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSale, setSelectedSale] = useState(null);
     const queryClient = useQueryClient();
@@ -430,17 +431,25 @@ const Sales = () => {
 
             {/* Search */}
             <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
-                <div className="flex items-center gap-4">
-                    <div className="flex-1 relative">
-                        <Search className="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Search sales by customer, product, or Invoice No..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all font-medium text-slate-900"
-                        />
+                <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+                        <Search className="w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                     </div>
+                    <input
+                        type="text"
+                        placeholder="Search sales by customer, product, or Invoice No..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-16 pr-6 py-5 bg-white border-2 border-slate-100 rounded-[2rem] focus:ring-8 focus:ring-blue-50 focus:border-blue-500 outline-none transition-all font-black text-slate-900 shadow-sm placeholder:text-slate-400"
+                    />
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute inset-y-0 right-6 flex items-center text-slate-300 hover:text-slate-600 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    )}
                 </div>
             </div>
 
