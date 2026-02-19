@@ -52,56 +52,80 @@ const ProfitLoss = () => {
     });
 
     const financials = useMemo(() => {
-        // Calculate Totals
+        // Revenue & Cost
         const totalSales = sales.reduce((sum, s) => sum + (parseFloat(s.total) || 0), 0);
         const totalPurchases = purchases.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0);
 
-        // Calculate Stock Values
+        // Stock Values
         let openingStockValue = 0;
         let closingStockValue = 0;
 
         products.forEach(product => {
             const price = parseFloat(product.unit_price) || 0;
             const openingQty = parseInt(product.opening_qty) || 0;
-
-            // Opening Value
             openingStockValue += openingQty * price;
 
-            // Current (Closing) Qty Calculation
             const productMovements = stockItems.filter(item => item.product_id === product.id);
-            const inbound = productMovements.filter(m => m.type === 'IN').reduce((sum, m) => sum + m.quantity, 0);
-            const outbound = productMovements.filter(m => m.type === 'OUT').reduce((sum, m) => sum + m.quantity, 0);
-
+            const inbound = productMovements.filter(m => m.type === 'IN').reduce((sum, m) => sum + (m.quantity || 0), 0);
+            const outbound = productMovements.filter(m => m.type === 'OUT').reduce((sum, m) => sum + (m.quantity || 0), 0);
             const closingQty = openingQty + inbound - outbound;
             closingStockValue += closingQty * price;
         });
 
-        // Profit Calculations
-        const directExpenses = 0; // Placeholder for now
-        const directIncomes = 0; // Placeholder for now
-        const indirectExpenses = 0; // Placeholder
-        const indirectIncomes = 0; // Placeholder
+        // Placeholders (extend later with real data)
+        const directExpenses = 0;
+        const directIncomes = 0;
+        const indirectExpenses = 0;
+        const indirectIncomes = 0;
 
-        const totalExpensesSide = openingStockValue + totalPurchases + directExpenses;
-        const totalIncomesSide = totalSales + directIncomes + closingStockValue;
+        // Trading Account (Gross Profit)
+        // Income side: Sales + Direct Incomes + Closing Stock
+        // Expense side: Opening Stock + Purchases + Direct Expenses
+        const tradingIncome = totalSales + directIncomes + closingStockValue;
+        const tradingExpense = openingStockValue + totalPurchases + directExpenses;
+        const grossProfit = tradingIncome - tradingExpense;
+        // If negative → Gross Loss (shown on income side as balancing)
 
-        const grossProfit = totalIncomesSide - totalExpensesSide;
+        // P&L Account (Net Profit)
+        // Income side: Gross Profit (b/f) + Indirect Incomes
+        // Expense side: Indirect Expenses
         const netProfit = grossProfit + indirectIncomes - indirectExpenses;
 
+        // Grand totals — both sides of T must be equal
+        // Expense side total: tradingExpense + |grossProfit if positive| + indirectExpenses
+        // Income side total: tradingIncome + indirectIncomes
+        // Both should equal max(tradingIncome, tradingExpense) for trading + P&L combined
+        const grandTotal = Math.max(
+            tradingExpense + (grossProfit > 0 ? grossProfit : 0) + indirectExpenses + (netProfit < 0 ? Math.abs(netProfit) : 0),
+            tradingIncome + indirectIncomes + (netProfit > 0 ? netProfit : 0)
+        );
+
         return {
-            period: 'Current Direct Period',
+            period: 'Current Period',
             openingStock: openingStockValue,
             purchases: totalPurchases,
+            directExpenses,
+            directIncomes,
+            indirectExpenses,
+            indirectIncomes,
             sales: totalSales,
             closingStock: closingStockValue,
             grossProfit,
             netProfit,
-            total: totalIncomesSide > totalExpensesSide ? totalIncomesSide : totalExpensesSide
+            grandTotal,
         };
     }, [sales, purchases, products, stockItems]);
 
-    const grossProfitPercent = financials.sales ? ((financials.grossProfit / financials.sales) * 100).toFixed(1) : '0.0';
-    const netProfitPercent = financials.sales ? ((financials.netProfit / financials.sales) * 100).toFixed(1) : '0.0';
+    const fmt = (n) => Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    const grossProfitPercent = financials.sales
+        ? ((financials.grossProfit / financials.sales) * 100).toFixed(1)
+        : '0.0';
+    const netProfitPercent = financials.sales
+        ? ((financials.netProfit / financials.sales) * 100).toFixed(1)
+        : '0.0';
+    const operatingRatio = financials.sales
+        ? (((financials.openingStock + financials.purchases + financials.directExpenses + financials.indirectExpenses) / financials.sales) * 100).toFixed(1)
+        : '0.0';
 
     return (
         <div className="flex h-screen bg-[#F8FAFC]">
@@ -118,12 +142,6 @@ const ProfitLoss = () => {
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <h1 className="text-xl font-bold text-slate-800">Reports</h1>
-                    </div>
-
-                    <div className="flex items-center space-x-5">
-                        <div className="w-9 h-9 rounded-full bg-[#DBEAFE] text-[#2563EB] flex items-center justify-center font-bold border border-white shadow-sm cursor-pointer">
-                            JD
-                        </div>
                     </div>
                 </header>
 
@@ -152,57 +170,97 @@ const ProfitLoss = () => {
 
                     {/* T-Shape P&L Container */}
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden flex divide-x divide-slate-100 min-h-[600px]">
-                        {/* EXPENSES SIDE */}
+
+                        {/* EXPENSES SIDE (Debit) */}
                         <div className="flex-1 flex flex-col">
                             <div className="bg-slate-50/50 px-8 py-4 border-b border-slate-100 flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                <span>Expenses</span>
+                                <span>Expenses (Dr)</span>
                                 <span>Amount (₹)</span>
                             </div>
-                            <div className="flex-1 p-4 space-y-1">
-                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Opening Stock" value={financials.openingStock.toLocaleString('en-IN', { minimumFractionDigits: 2 })} />
-                                <TableRow label="Purchases Accounts" value={financials.purchases.toLocaleString('en-IN', { minimumFractionDigits: 2 })} />
-                                <TableRow label="Direct Expenses" value="0.00" />
+                            <div className="flex-1 p-4">
+                                {/* Trading section */}
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-300 px-4 pt-2 pb-1">Trading Account</p>
+                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Opening Stock" value={fmt(financials.openingStock)} />
+                                <TableRow label="Purchases" value={fmt(financials.purchases)} />
+                                <TableRow label="Direct Expenses" value={fmt(financials.directExpenses)} />
 
-                                <div className="pt-2 pb-1">
-                                    <TableRow label="Gross Profit c/o" value={financials.grossProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })} blue />
-                                </div>
+                                {/* Gross Profit on expenses side only when income > expense */}
+                                {financials.grossProfit > 0 && (
+                                    <div className="pt-2 pb-1">
+                                        <TableRow label="Gross Profit c/o" value={fmt(financials.grossProfit)} blue />
+                                    </div>
+                                )}
+                                {financials.grossProfit < 0 && (
+                                    <div className="pt-2 pb-1">
+                                        <TableRow label="Gross Loss c/o" value={fmt(financials.grossProfit)} red />
+                                    </div>
+                                )}
 
-                                <div className="h-px bg-slate-50 my-2 mx-4" />
+                                <div className="h-px bg-slate-100 my-3 mx-4" />
 
-                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Indirect Expenses" value="0.00" />
+                                {/* P&L section */}
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-300 px-4 pb-1">P&L Account</p>
+                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Indirect Expenses" value={fmt(financials.indirectExpenses)} />
+
+                                {/* Net Profit on expenses side (when profit) */}
+                                {financials.netProfit > 0 && (
+                                    <div className="pt-2">
+                                        <TableRow label="Net Profit c/o" value={fmt(financials.netProfit)} blue />
+                                    </div>
+                                )}
                             </div>
-                            <div className="px-8 py-8 border-t border-slate-100">
-                                <div className="flex justify-between items-end border-t-2 border-[#2563EB] pt-4">
-                                    <span className="text-xl font-black text-slate-900 tracking-tight">Net Profit</span>
-                                    <span className="text-2xl font-black text-slate-900 tracking-tight">{financials.netProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <div className="px-8 py-5 border-t-2 border-slate-200 bg-slate-50/40">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-black text-slate-500 uppercase tracking-widest">Grand Total</span>
+                                    <span className="text-2xl font-black text-slate-900 tracking-tight">
+                                        ₹{fmt(financials.grandTotal)}
+                                    </span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* INCOMES SIDE */}
+                        {/* INCOMES SIDE (Credit) */}
                         <div className="flex-1 flex flex-col">
                             <div className="bg-slate-50/50 px-8 py-4 border-b border-slate-100 flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                                <span>Incomes</span>
+                                <span>Incomes (Cr)</span>
                                 <span>Amount (₹)</span>
                             </div>
-                            <div className="flex-1 p-4 space-y-1">
-                                <TableRow label="Sales Accounts" value={financials.sales.toLocaleString('en-IN', { minimumFractionDigits: 2 })} />
-                                <TableRow label="Direct Incomes" value="0.00" />
-                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Closing Stock" value={financials.closingStock.toLocaleString('en-IN', { minimumFractionDigits: 2 })} />
+                            <div className="flex-1 p-4">
+                                {/* Trading section */}
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-300 px-4 pt-2 pb-1">Trading Account</p>
+                                <TableRow label="Sales" value={fmt(financials.sales)} />
+                                <TableRow label="Direct Incomes" value={fmt(financials.directIncomes)} />
+                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Closing Stock" value={fmt(financials.closingStock)} />
 
-                                <div className="h-px bg-slate-50 my-4 mx-4" />
+                                {/* Gross Loss on income side (when expense > income) */}
+                                {financials.grossProfit < 0 && (
+                                    <div className="pt-2 pb-1">
+                                        <TableRow label="Gross Loss b/f" value={fmt(financials.grossProfit)} red />
+                                    </div>
+                                )}
 
-                                <TableRow label="Gross Profit b/f" value={financials.grossProfit.toLocaleString('en-IN', { minimumFractionDigits: 2 })} isBold />
+                                <div className="h-px bg-slate-100 my-3 mx-4" />
 
-                                <div className="pt-2">
-                                    <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Indirect Incomes" value="0.00" />
-                                </div>
+                                {/* P&L section */}
+                                <p className="text-[9px] font-black uppercase tracking-widest text-slate-300 px-4 pb-1">P&L Account</p>
+                                {/* Gross Profit brought forward on income side */}
+                                {financials.grossProfit > 0 && (
+                                    <TableRow label="Gross Profit b/f" value={fmt(financials.grossProfit)} isBold />
+                                )}
+                                <TableRow icon={<PlusCircle className="w-4 h-4 text-slate-400" />} label="Indirect Incomes" value={fmt(financials.indirectIncomes)} />
+
+                                {/* Net Loss on income side */}
+                                {financials.netProfit < 0 && (
+                                    <div className="pt-2">
+                                        <TableRow label="Net Loss b/f" value={fmt(financials.netProfit)} red />
+                                    </div>
+                                )}
                             </div>
-                            <div className="px-8 py-8 bg-slate-50/30 border-t border-slate-100">
-                                <div className="flex justify-between items-end pt-4 border-t-2 border-slate-100">
-                                    <span className="text-xl font-black text-slate-900 tracking-tight">Total:</span>
-                                    <span className="text-2xl font-black text-slate-900 tracking-tight underline decoration-[#2563EB] decoration-4 underline-offset-8">
-                                        {(financials.grossProfit + financials.openingStock + financials.purchases).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            <div className="px-8 py-5 border-t-2 border-slate-200 bg-slate-50/40">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm font-black text-slate-500 uppercase tracking-widest">Grand Total</span>
+                                    <span className="text-2xl font-black text-slate-900 tracking-tight">
+                                        ₹{fmt(financials.grandTotal)}
                                     </span>
                                 </div>
                             </div>
@@ -210,12 +268,27 @@ const ProfitLoss = () => {
                     </div>
 
                     {/* Bottom Analysis Section */}
-                    <div className="mt-12 flex items-center justify-between">
-                        <div className="grid grid-cols-3 gap-8 flex-1 mr-12">
-                            <SummaryCard label="Gross Profit %" value={`${grossProfitPercent}%`} />
-                            <SummaryCard label="Net Profit %" value={`${netProfitPercent}%`} />
-                            <SummaryCard label="Operating Ratio" value="-" />
-                        </div>
+                    <div className="mt-10 grid grid-cols-3 gap-6">
+                        <SummaryCard
+                            label="Gross Profit"
+                            subLabel="% of Sales"
+                            value={`₹${fmt(financials.grossProfit)}`}
+                            badge={`${grossProfitPercent}%`}
+                            positive={financials.grossProfit >= 0}
+                        />
+                        <SummaryCard
+                            label="Net Profit"
+                            subLabel="% of Sales"
+                            value={`₹${fmt(financials.netProfit)}`}
+                            badge={`${netProfitPercent}%`}
+                            positive={financials.netProfit >= 0}
+                        />
+                        <SummaryCard
+                            label="Operating Ratio"
+                            subLabel="Expenses / Sales"
+                            value={financials.sales > 0 ? `${operatingRatio}%` : '—'}
+                            positive={financials.sales > 0 && parseFloat(operatingRatio) < 100}
+                        />
                     </div>
                 </main>
             </div>
@@ -233,20 +306,38 @@ const FilterDropdown = ({ label, value }) => (
     </div>
 );
 
-const TableRow = ({ icon, label, value, blue, simple, isBold }) => (
+const TableRow = ({ icon, label, value, blue, red, simple, isBold }) => (
     <div className={`flex justify-between items-center px-4 py-3 rounded-lg hover:bg-slate-50/50 transition-colors group ${simple ? 'py-1.5' : ''}`}>
         <div className="flex items-center space-x-3">
             {icon && <span className="shrink-0">{icon}</span>}
-            <span className={`text-[13px] ${blue ? 'text-[#2563EB] font-black' : isBold ? 'font-black text-slate-900' : 'font-bold text-slate-600'}`}>{label}</span>
+            <span className={`text-[13px] ${blue ? 'text-[#2563EB] font-black' :
+                    red ? 'text-red-600 font-black' :
+                        isBold ? 'font-black text-slate-900' :
+                            'font-bold text-slate-600'
+                }`}>{label}</span>
         </div>
-        <span className={`text-[13px] tracking-tight ${blue ? 'text-[#2563EB] font-black underline decoration-2 underline-offset-4' : isBold ? 'font-black text-slate-900' : 'font-black text-slate-800'}`}>₹{value}</span>
+        <span className={`text-[13px] tracking-tight ${blue ? 'text-[#2563EB] font-black underline decoration-2 underline-offset-4' :
+                red ? 'text-red-600 font-black' :
+                    isBold ? 'font-black text-slate-900' :
+                        'font-black text-slate-800'
+            }`}>₹{value}</span>
     </div>
 );
 
-const SummaryCard = ({ label, value }) => (
+const SummaryCard = ({ label, subLabel, value, badge, positive = true }) => (
     <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{label}</p>
-        <p className="text-3xl font-black text-slate-900 tracking-tight">{value}</p>
+        <div className="flex items-start justify-between mb-3">
+            <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{label}</p>
+                {subLabel && <p className="text-[9px] text-slate-300 font-bold mt-0.5">{subLabel}</p>}
+            </div>
+            {badge && (
+                <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${positive ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
+                    }`}>{badge}</span>
+            )}
+        </div>
+        <p className={`text-2xl font-black tracking-tight ${positive ? 'text-slate-900' : 'text-red-600'
+            }`}>{value}</p>
     </div>
 );
 

@@ -23,7 +23,8 @@ import {
     ChevronRight,
     Building2,
     Calendar,
-    LogOut
+    LogOut,
+    Bot
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -106,6 +107,7 @@ const DashboardLayout = () => {
                             { title: "Stock Movements", sub: "Track Movement", icon: TrendingUp, color: "bg-teal-600", to: "/stock-movements" },
                             { title: "Customers", sub: "Manage Customers", icon: Users, color: "bg-green-600", to: "/customers" },
                             { title: "Suppliers", sub: "Manage Suppliers", icon: Truck, color: "bg-purple-600", to: "/suppliers" },
+                            { title: "AI Assistant", sub: "Chat with AI", icon: Bot, color: "bg-gradient-to-br from-blue-600 to-violet-600", to: "/ai-chat" },
                         ].map((item, idx) => (
                             <NavLink
                                 key={idx}
@@ -131,7 +133,7 @@ const DashboardLayout = () => {
 
                         <div className="h-px bg-slate-100 my-4 mx-3"></div>
 
-                        <SidebarItem to="/reports/profit-loss" icon={BarChart3}>Advanced Reports</SidebarItem>
+                        <SidebarItem to="/reports/profit-loss" icon={BarChart3}>P&L Statement</SidebarItem>
                     </nav>
                 </div>
 

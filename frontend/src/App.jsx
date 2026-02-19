@@ -18,6 +18,7 @@ import Banking from './pages/Banking';
 import StockMovements from './pages/StockMovements';
 import Invoices from './pages/Invoices';
 import Sales from './pages/Sales';
+import AIChatbot from './pages/AIChatbot';
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
               <Route path="/reports/profit-loss" element={<ProfitLoss />} />
               <Route path="/inventory" element={<StockSummary />} />
               <Route path="/active-stock" element={<StockSummary />} />
+              <Route path="/ai-chat" element={<AIChatbot />} />
             </Route>
           </Route>
 
