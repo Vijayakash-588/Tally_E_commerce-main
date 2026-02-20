@@ -131,6 +131,7 @@ const Customers = () => {
     const navigate = useNavigate();
     const { searchTerm, setSearchTerm } = useSearch();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
 
     const { data: customers, isLoading } = useQuery({
         queryKey: ['customers'],

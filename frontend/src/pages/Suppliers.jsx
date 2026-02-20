@@ -142,6 +142,7 @@ const Suppliers = () => {
     const navigate = useNavigate();
     const { searchTerm, setSearchTerm } = useSearch();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedSupplier, setSelectedSupplier] = useState(null);
 
     const { data: suppliers, isLoading } = useQuery({
         queryKey: ['suppliers'],
