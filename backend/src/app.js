@@ -14,6 +14,7 @@ const customerRoutes = require('./services/sales/routes/customer.routes');
 const purchaseRoutes = require('./services/purchase/routes/purchase.routes');
 const supplierRoutes = require('./services/purchase/routes/supplier.routes');
 const invoiceRoutes = require('./services/invoice/routes/invoice.routes');
+const aiRoutes = require('./services/ai/routes/ai.routes');
 
 const app = express();
 
@@ -66,6 +67,10 @@ app.use('/api/suppliers', supplierRoutes);
 
 // Invoice Service
 app.use('/api/invoices', invoiceRoutes);
+
+// AI Chatbot Service
+app.use('/api/ai', aiRoutes);
+
 require('./swagger')(app);
 
 /**

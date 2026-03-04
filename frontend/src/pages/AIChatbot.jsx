@@ -23,20 +23,7 @@ const SUGGESTIONS = [
     { icon: Zap, label: "Quick bank reconciliation", color: "text-cyan-500", bg: "bg-cyan-50 hover:bg-cyan-100 border-cyan-100" },
 ];
 
-const DEMO_RESPONSES = {
-    "show my sales summary": "📊 **Sales Summary — February 2026**\n\n- **Total Revenue:** ₹4,82,300\n- **Invoices Raised:** 38\n- **Top Product:** Premium Widget Pro\n- **Growth vs Last Month:** +12.4% 📈\n\nWould you like a detailed breakdown by product or customer?",
-    "generate p&l report": "📋 **Profit & Loss — Feb 2026**\n\n| Item | Amount |\n|------|--------|\n| Revenue | ₹4,82,300 |\n| COGS | ₹2,10,500 |\n| Gross Profit | ₹2,71,800 |\n| Expenses | ₹48,200 |\n| **Net Profit** | **₹2,23,600** |\n\nNet Margin: **46.4%** 🎯",
-    "low stock alerts": "⚠️ **Low Stock Alerts**\n\n3 items need immediate reordering:\n\n1. **Widget Pro XL** — 4 units left (min: 10)\n2. **Blue Connector Set** — 2 units left (min: 15)\n3. **Adapter Bundle** — 1 unit left (min: 5)\n\nShall I create purchase orders for these?",
-    "quick bank reconciliation": "🏦 **Bank Reconciliation Status**\n\n- **Bank Balance:** ₹1,24,500\n- **Book Balance:** ₹1,22,300\n- **Difference:** ₹2,200\n- **Uncleared Cheques:** 2 pending\n\nWould you like to view the uncleared transactions?",
-};
-
-function getResponse(input) {
-    const key = input.toLowerCase().trim();
-    for (const [k, v] of Object.entries(DEMO_RESPONSES)) {
-        if (key.includes(k) || k.includes(key)) return v;
-    }
-    return `I'm your ERP AI assistant! 🤖 I can help you with:\n\n- **Sales & Revenue** reports\n- **Inventory & Stock** management\n- **Banking & Reconciliation**\n- **Profit & Loss** statements\n- **Customer & Supplier** insights\n\nTry asking me something like: "*Show my sales summary*" or "*Low stock alerts*"`;
-}
+// Demo responses removed as they are now handled by the MCP backend.
 
 function MarkdownLine({ text }) {
     const parts = text.split(/(\*\*[^*]+\*\*)/g);
@@ -90,12 +77,16 @@ const TypingDots = () => (
     </div>
 );
 
+import { sendChatMessage } from '../api/ai';
+
+// ... (keep constants)
+
 const AIChatbot = () => {
     const [messages, setMessages] = useState([
         {
             id: 1,
             role: 'assistant',
-            text: "Hello! 👋 I'm your ERP AI Assistant powered by **Gateway-Pro**.\n\nI can help you analyze sales, manage inventory, generate reports, and much more. What would you like to know today?",
+            text: "Hello! 👋 I'm your ERP AI Assistant powered by **Gateway-Pro** and **MCP**.\n\nI can help you analyze sales, manage inventory, generate reports, and much more. What would you like to know today?",
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
     ]);
@@ -108,7 +99,7 @@ const AIChatbot = () => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isTyping]);
 
-    const sendMessage = (text) => {
+    const sendMessage = async (text) => {
         const trimmed = (text || input).trim();
         if (!trimmed) return;
 
@@ -123,16 +114,25 @@ const AIChatbot = () => {
         setInput('');
         setIsTyping(true);
 
-        setTimeout(() => {
-            const reply = getResponse(trimmed);
-            setIsTyping(false);
+        try {
+            const reply = await sendChatMessage(trimmed);
             setMessages(prev => [...prev, {
                 id: Date.now() + 1,
                 role: 'assistant',
                 text: reply,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }]);
-        }, 1200 + Math.random() * 600);
+        } catch (error) {
+            console.error('Chat Error:', error);
+            setMessages(prev => [...prev, {
+                id: Date.now() + 1,
+                role: 'assistant',
+                text: "I'm sorry, I'm having trouble connecting to the AI service. Please check if the backend is running and the Hugging Face token is configured.",
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }]);
+        } finally {
+            setIsTyping(false);
+        }
     };
 
     const handleKey = (e) => {
