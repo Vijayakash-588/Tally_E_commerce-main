@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect} from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Plus,
@@ -306,6 +306,9 @@ const Sales = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSale, setSelectedSale] = useState(null);
     const queryClient = useQueryClient();
+    const [currentPage, setCurrentPage] = useState(1);
+        const rowsPerPage = 10;
+        const [statusFilter,setStatusFilter] = useState("all");
 
     // Fetch Invoices instead of Sales
     const { data: sales = [], isLoading } = useQuery({
@@ -354,6 +357,14 @@ const Sales = () => {
             sale.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
     });
+        // Slicing Logic for pagination here
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const paginatedData = filtered.slice(startIndex, startIndex + rowsPerPage);
+    const totalPages = Math.ceil(filtered.length / rowsPerPage) || 1;
+    //reset to page 1 when any changes...
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter]);
 
     const stats = {
         total: sales.length,
@@ -489,7 +500,7 @@ const Sales = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.map((sale) => {
+                                {paginatedData.map((sale) => {
                                     const firstItem = sale.line_items?.[0] || {};
                                     const itemCount = sale.line_items?.length || 0;
                                     const productName = getProductName(firstItem.product_id);
@@ -559,6 +570,33 @@ const Sales = () => {
                                 })}
                             </tbody>
                         </table>
+                                            <div className="flex items-center justify-between p-8 border-t border-slate-50">
+    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, filtered.length)} of {filtered.length} entries
+    </p>
+    
+    <div className="flex items-center gap-2">
+        <button 
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+            className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
+        >
+            Previous
+        </button>
+        
+        <span className="text-[10px] font-black text-slate-400 px-2 uppercase tracking-widest">
+            Page {currentPage} of {totalPages}
+        </span>
+        
+        <button 
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
+        >
+            Next
+        </button>
+    </div>
+</div>
                     </div>
                 )}
             </div>
