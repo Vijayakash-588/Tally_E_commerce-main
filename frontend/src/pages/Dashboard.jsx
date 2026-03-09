@@ -142,6 +142,9 @@ const Dashboard = () => {
     });
     const [recentTransactions, setRecentTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 10;
+    const [statusFilter, setStatusFilter] = useState('all');
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -213,6 +216,14 @@ const Dashboard = () => {
             txn.type.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [recentTransactions, searchTerm]);
+        // Slicing Logic for pagination here
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const paginatedData = filteredTransactions.slice(startIndex, startIndex + rowsPerPage);
+    const totalPages = Math.ceil(filteredTransactions.length / rowsPerPage) || 1;
+    //reset to page 1 when any changes...
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter]);
 
     const typeColors = {
         'Sales': 'bg-emerald-50 text-emerald-600',
@@ -351,7 +362,7 @@ const Dashboard = () => {
                                 </thead>
                                 <tbody className="divide-y divide-slate-50 text-slate-800">
                                     {filteredTransactions.length > 0 ? (
-                                        filteredTransactions.map((txn, idx) => (
+                                        paginatedData.map((txn, idx) => (
                                             <TransactionRow
                                                 key={idx}
                                                 date={txn.date}
@@ -377,6 +388,33 @@ const Dashboard = () => {
                                     )}
                                 </tbody>
                             </table>
+                                                <div className="flex items-center justify-between p-8 border-t border-slate-50">
+    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, filteredTransactions.length)} of {filteredTransactions.length} entries
+    </p>
+    
+    <div className="flex items-center gap-2">
+        <button 
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+            className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
+        >
+            Previous
+        </button>
+        
+        <span className="text-[10px] font-black text-slate-400 px-2 uppercase tracking-widest">
+            Page {currentPage} of {totalPages}
+        </span>
+        
+        <button 
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
+        >
+            Next
+        </button>
+    </div>
+</div>
                         </div>
 
                         <div className="p-8 border-t border-slate-50 bg-slate-50/20 text-center">
