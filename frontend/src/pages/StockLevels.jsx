@@ -1,4 +1,6 @@
 import React, { useState,useEffect} from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { useSearch } from '../context/SearchContext';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -16,11 +18,68 @@ const StockLevels = () => {
     const rowsPerPage = 10;
     const [statusFilter, setStatusFilter] = useState('all');
     const [groupFilter, setGroupFilter] = useState('all');
+        const downloadPDF = () => {
+        const doc = new jsPDF('landscape');
+        
+        // 1. Add Title & Header Info
+doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Stock Levels Report', 14, 20);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    const dateStr = new Date().toLocaleString('en-IN');
+    doc.text(`Generated on: ${dateStr}`, 14, 28);
+    doc.text(`Group Filter: ${groupFilter.toUpperCase()}`, 14, 33);
+    
+        // 2. Prepare Table Data
+const tableColumn = ["Product", "SKU", "Opening", "Inwards", "Outwards", "Closing"];
+    const tableRows = filteredLevels.map(item => [
+        item.name || 'N/A',
+        item.sku || 'N/A',
+        item.opening_qty || 0,
+        `+${item.inwards || 0}`,
+        `-${item.outwards || 0}`,
+        item.closing_qty || 0
+    ]);
+    
+        // 3. Generate Table
+autoTable(doc, {
+        startY: 40,
+        head: [tableColumn],
+        body: tableRows,
+        theme: 'striped',
+        headStyles: { 
+            fillColor: [37, 99, 235],
+            textColor: [255, 255, 255],
+            fontSize: 10,
+            fontStyle: 'bold' 
+        },
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: {
+            2: { halign: 'center' }, // Opening
+            3: { halign: 'center' }, // Inwards
+            4: { halign: 'center' }, // Outwards
+            5: { halign: 'center' }  // Closing
+        },
+        didDrawPage: (data) => {
+            const str = "Page " + doc.internal.getNumberOfPages();
+            doc.setFontSize(10);
+            doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
+        }
+    });
+    
+        // 4. Save the PDF
+       doc.save(`Stock_Levels_Report_${new Date().getTime()}.pdf`);
+        
+        };
+    
 
     const { data: stockLevels = [], isLoading, refetch } = useQuery({
         queryKey: ['stock-levels'],
         queryFn: getStockLevels
     });
+    
 
     const filteredLevels = stockLevels.filter(item => {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,7 +124,7 @@ const StockLevels = () => {
                         className="p-4 bg-white text-slate-600 hover:text-blue-600 rounded-2xl border border-slate-100 transition-all shadow-sm group">
                         <RefreshCcw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
                     </button>
-                    <button className="flex items-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-600/30 hover:bg-blue-700 font-black uppercase tracking-widest text-xs transition-all">
+                    <button onClick = {downloadPDF}className="flex items-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-600/30 hover:bg-blue-700 font-black uppercase tracking-widest text-xs transition-all">
                         <Download className="w-4 h-4" />
                         Export Report
                     </button>
