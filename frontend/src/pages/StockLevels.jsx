@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect} from 'react';
 import { useSearch } from '../context/SearchContext';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -12,6 +12,9 @@ import clsx from 'clsx';
 const StockLevels = () => {
     const navigate = useNavigate();
     const { searchTerm, setSearchTerm } = useSearch();
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 10;
+    const [statusFilter, setStatusFilter] = useState('all');
     const [groupFilter, setGroupFilter] = useState('all');
 
     const { data: stockLevels = [], isLoading, refetch } = useQuery({
@@ -25,6 +28,14 @@ const StockLevels = () => {
         const matchesGroup = groupFilter === 'all' || item.group === groupFilter;
         return matchesSearch && matchesGroup;
     });
+        // Slicing Logic for pagination here
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const paginatedData = filteredLevels .slice(startIndex, startIndex + rowsPerPage);
+    const totalPages = Math.ceil(filteredLevels .length / rowsPerPage) || 1;
+    //reset to page 1 when any changes...
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter]);
 
     const groups = ['all', ...new Set(stockLevels.map(item => item.group).filter(Boolean))];
 
@@ -138,7 +149,7 @@ const StockLevels = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredLevels.map((item) => (
+                                paginatedData.map((item) => (
                                     <tr key={item.product_id} className="hover:bg-slate-50/50 transition-colors group">
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
@@ -179,6 +190,33 @@ const StockLevels = () => {
                             )}
                         </tbody>
                     </table>
+                                        <div className="flex items-center justify-between p-8 border-t border-slate-50">
+    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, filteredLevels.length)} of {filteredLevels .length} entries
+    </p>
+    
+    <div className="flex items-center gap-2">
+        <button 
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+            className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
+        >
+            Previous
+        </button>
+        
+        <span className="text-[10px] font-black text-slate-400 px-2 uppercase tracking-widest">
+            Page {currentPage} of {totalPages}
+        </span>
+        
+        <button 
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
+        >
+            Next
+        </button>
+    </div>
+</div>
                 </div>
             </div>
         </div>
