@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect} from 'react';
 import { useSearch } from '../context/SearchContext';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowUp, ArrowDown, Search, ArrowLeft, TrendingUp, TrendingDown, Activity, X } from 'lucide-react';
@@ -10,6 +10,9 @@ const StockMovements = () => {
     const navigate = useNavigate();
     const { searchTerm, setSearchTerm } = useSearch();
     const [filterType, setFilterType] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
+     const [statusFilter, setStatusFilter] = useState('all');
+    const rowsPerPage = 10;
 
     const { data: stockItems = [], isLoading } = useQuery({
         queryKey: ['stock_items'],
@@ -48,6 +51,14 @@ const StockMovements = () => {
         const matchesType = filterType === 'all' || m.type === filterType;
         return matchesSearch && matchesType;
     });
+        // Slicing Logic for pagination here
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const paginatedData = filtered.slice(startIndex, startIndex + rowsPerPage);
+    const totalPages = Math.ceil(filtered.length / rowsPerPage) || 1;
+    //reset to page 1 when any changes...
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter]);
 
     // Calculate statistics
     const stats = {
@@ -174,7 +185,7 @@ const StockMovements = () => {
                                     <td colSpan="6" className="px-8 py-12 text-center text-slate-400 font-bold">No movements found</td>
                                 </tr>
                             ) : (
-                                filtered.map((movement) => (
+                                paginatedData.map((movement) => (
                                     <tr key={movement.id} className="hover:bg-slate-50 transition-colors group">
                                         <td className="px-8 py-5 whitespace-nowrap">
                                             <div className="text-sm font-black text-slate-900">{movement.product_name}</div>
@@ -216,6 +227,33 @@ const StockMovements = () => {
                             )}
                         </tbody>
                     </table>
+                                        <div className="flex items-center justify-between p-8 border-t border-slate-50">
+    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, filtered.length)} of {filtered.length} entries
+    </p>
+    
+    <div className="flex items-center gap-2">
+        <button 
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+            className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
+        >
+            Previous
+        </button>
+        
+        <span className="text-[10px] font-black text-slate-400 px-2 uppercase tracking-widest">
+            Page {currentPage} of {totalPages}
+        </span>
+        
+        <button 
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
+        >
+            Next
+        </button>
+    </div>
+</div>
                 </div>
             </div>
         </div>
