@@ -143,7 +143,7 @@ const Dashboard = () => {
     const [recentTransactions, setRecentTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 10;
+    const rowsPerPage = 5;
     const [statusFilter, setStatusFilter] = useState('all');
 
     useEffect(() => {

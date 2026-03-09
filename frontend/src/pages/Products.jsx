@@ -199,7 +199,7 @@ const Products = () => {
     const { searchTerm, setSearchTerm } = useSearch();
     const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 10;
+    const rowsPerPage = 5;
     const [statusFilter, setStatusFilter] = useState('all');
 
     const { data: products, isLoading } = useQuery({

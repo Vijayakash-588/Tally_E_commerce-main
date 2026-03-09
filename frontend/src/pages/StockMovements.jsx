@@ -12,7 +12,7 @@ const StockMovements = () => {
     const [filterType, setFilterType] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
      const [statusFilter, setStatusFilter] = useState('all');
-    const rowsPerPage = 10;
+    const rowsPerPage = 5;
 
     const { data: stockItems = [], isLoading } = useQuery({
         queryKey: ['stock_items'],

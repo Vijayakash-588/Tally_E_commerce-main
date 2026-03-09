@@ -15,7 +15,7 @@ const StockLevels = () => {
     const navigate = useNavigate();
     const { searchTerm, setSearchTerm } = useSearch();
     const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 10;
+    const rowsPerPage = 5;
     const [statusFilter, setStatusFilter] = useState('all');
     const [groupFilter, setGroupFilter] = useState('all');
         const downloadPDF = () => {

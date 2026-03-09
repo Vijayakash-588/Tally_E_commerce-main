@@ -502,7 +502,7 @@ const InfoField = ({ label, value, children, large }) => (
 const Invoices = () => {
     const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 10; // Number of invoices to show per page
+    const rowsPerPage = 5; // Number of invoices to show per page
     const { searchTerm, setSearchTerm } = useSearch();
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState('all');

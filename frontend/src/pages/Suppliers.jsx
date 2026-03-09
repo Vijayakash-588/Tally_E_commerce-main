@@ -144,7 +144,7 @@ const Suppliers = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSupplier, setSelectedSupplier] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 10;
+    const rowsPerPage = 5;
     const [statusFilter, setStatusFilter] = useState('all');
 
     const { data: suppliers, isLoading } = useQuery({
