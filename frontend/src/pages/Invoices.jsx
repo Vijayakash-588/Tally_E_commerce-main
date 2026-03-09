@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Trash2, Edit2, Play, CheckCircle, Clock, Save, X, Plus, Search, FileDown, Send, CreditCard, ChevronRight, Filter,AlertCircle,Ban,FileText,ArrowLeft,RefreshCcw,Download,Calendar,Eye,List} from 'lucide-react';
@@ -505,6 +508,62 @@ const Invoices = () => {
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const queryClient = useQueryClient();
+    const downloadPDF = () => {
+    const doc = new jsPDF('landscape');
+    
+    // 1. Add Title & Header Info
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59); // Slate-800
+    doc.text('Invoice Ledger Report', 14, 20);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    const dateStr = new Date().toLocaleString('en-IN');
+    doc.text(`Generated on: ${dateStr}`, 14, 28);
+    doc.text(`Status Filter: ${statusFilter.toUpperCase()}`, 14, 33);
+
+    // 2. Prepare Table Data
+    const tableColumn = ["Invoice #", "Customer", "Issue Date", "Due Date", "Total Amount", "Balance", "Status"];
+    const tableRows = filtered.map(inv => [
+        inv.invoice_number || `INV-${inv.id?.substring(0, 8)}`,
+        inv.customer?.name || 'N/A',
+        inv.issue_date ? new Date(inv.issue_date).toLocaleDateString('en-IN') : '-',
+        inv.due_date ? new Date(inv.due_date).toLocaleDateString('en-IN') : '-',
+        `INR ${inv.total_amount?.toLocaleString('en-IN') || 0}`,
+        `INR ${(inv.total_amount - (inv.paid_amount || 0)).toLocaleString('en-IN')}`,
+        (STATUS_CONFIG[inv.status?.toLowerCase()]?.label || inv.status).toUpperCase()
+    ]);
+
+    // 3. Generate Table
+autoTable(doc, {
+        startY: 40,
+        head: [tableColumn],
+        body: tableRows,
+        theme: 'striped',
+        headStyles: { 
+            fillColor: [37, 99, 235], // Blue-600
+            textColor: [255, 255, 255],
+            fontSize: 10,
+            fontStyle: 'bold' 
+        },
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: {
+            4: { halign: 'right' }, // Total Amount column
+            5: { halign: 'right' }, // Balance column
+            6: { halign: 'center' } // Status column
+        },
+        didDrawPage: (data) => {
+            // Footer with page numbers
+            const str = "Page " + doc.internal.getNumberOfPages();
+            doc.setFontSize(10);
+            doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
+        }
+    });
+
+    // 4. Save the PDF
+    doc.save(`Invoice_Ledger_${new Date().getTime()}.pdf`);
+    
+    };
 
     const { data: invoices = [], isLoading } = useQuery({
         queryKey: ['invoices'],
@@ -568,6 +627,12 @@ const Invoices = () => {
                         <Plus className="w-5 h-5 mr-2" />
                         Create Invoice
                     </button>
+                    <button
+                    onClick={downloadPDF}
+                    className="flex items-center gap-2 px-6 py-4 bg-slate-800 text-white rounded-2xl shadow-xl shadow-slate-800/20 hover:bg-slate-900 font-black uppercase tracking-widest text-xs transition-all">
+                        <Download className="w-4 h-4" /> {/* Changed icon to Download */}
+                        Export Ledger
+                        </button>
                 </div>
             </div>
 
