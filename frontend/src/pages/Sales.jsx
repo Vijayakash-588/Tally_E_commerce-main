@@ -38,10 +38,6 @@ const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
         const res = await customersApi.getCustomers();
-        // Log this to see what your API actually returns
-        // console.log('Customers API Response:', res); 
-        
-        // Ensure we return the array hidden inside res.data or res.data.data
         const data = res.data?.data || res.data || res;
         return Array.isArray(data) ? data : [];
     }
