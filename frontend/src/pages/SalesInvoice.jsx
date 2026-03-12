@@ -467,16 +467,33 @@ const SalesInvoice = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const { searchTerm, setSearchTerm } = useSearch();
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 10;
 
     const queryClient = useQueryClient();
 
-    const { data: invoices = [], isLoading } = useQuery({
-        queryKey: ['invoices'],
+    const { data: response = {}, isLoading, isFetching } = useQuery({
+        queryKey: ['invoices', currentPage, searchTerm],
         queryFn: async () => {
-            const res = await api.get('/invoices');
-            return Array.isArray(res.data) ? res.data : (res.data?.data || []);
-        }
+            const res = await api.get('/invoices', {
+                params: {
+                    page: currentPage,
+                    limit: rowsPerPage,
+                    search: searchTerm
+                }
+            });
+            return res.data;
+        },
+        keepPreviousData: true
     });
+
+    const invoices = Array.isArray(response) ? response : (response.data || []);
+    const totalRecords = response.total || invoices.length;
+    const totalPages = response.totalPages || Math.ceil(invoices.length / rowsPerPage) || 1;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers'],
@@ -494,12 +511,9 @@ const SalesInvoice = () => {
         }
     });
 
-    const filtered = invoices.filter(inv =>
-        inv.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customers.find(c => c.id === inv.customer_id)?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = invoices;
 
-    if (isLoading) {
+    if (isLoading && !isFetching) {
         return (
             <div className="flex flex-col justify-center items-center h-[60vh] space-y-4">
                 <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -557,7 +571,7 @@ const SalesInvoice = () => {
                 <div className="flex items-center space-x-4 px-6 border-l border-slate-100 h-10 hidden md:flex">
                     <div className="text-right">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Vouchers</p>
-                        <p className="text-lg font-black text-slate-900 leading-none">{filtered.length}</p>
+                        <p className="text-lg font-black text-slate-900 leading-none">{totalRecords}</p>
                     </div>
                     <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">
                         <Briefcase className="w-5 h-5" />
@@ -566,7 +580,12 @@ const SalesInvoice = () => {
             </div>
 
             {/* Sales Ledger Grid */}
-            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden min-h-[500px] flex flex-col">
+            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden min-h-[500px] flex flex-col relative">
+                {isFetching && (
+                    <div className="absolute inset-0 bg-white/50 backdrop-blur-[2px] flex items-center justify-center z-50 rounded-[2.5rem]">
+                        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-lg" />
+                    </div>
+                )}
                 <div className="overflow-x-auto flex-1">
                     <table className="min-w-full">
                         <thead>
@@ -657,6 +676,28 @@ const SalesInvoice = () => {
                             )}
                         </tbody>
                     </table>
+                </div>
+                <div className="p-8 border-t border-slate-50 flex items-center justify-between bg-slate-50/20">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Showing {invoices.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {(currentPage - 1) * rowsPerPage + invoices.length} of {totalRecords} entries
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1 || isFetching}
+                            className="px-4 py-2 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50 bg-white shadow-sm"
+                        >
+                            Prev
+                        </button>
+                        <span className="text-[10px] font-black text-slate-900 mx-2 uppercase tracking-tighter">Page {currentPage} of {totalPages}</span>
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages || isFetching}
+                            className="px-4 py-2 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50 bg-white shadow-sm"
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             </div>
 

@@ -1,4 +1,4 @@
-import React, { useState,useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Plus, Search, Edit, Trash2, X, ArrowLeft, Tag, Layers, ToggleLeft, ToggleRight } from 'lucide-react';
@@ -202,9 +202,15 @@ const Products = () => {
     const rowsPerPage = 5;
     const [statusFilter, setStatusFilter] = useState('all');
 
-    const { data: products, isLoading } = useQuery({
-        queryKey: ['products'],
-        queryFn: getProducts
+    // Query updated to include pagination & search params
+    const { data: response = {}, isLoading, isFetching } = useQuery({
+        queryKey: ['products', currentPage, searchTerm, statusFilter],
+        queryFn: () => getProducts({
+            page: currentPage,
+            limit: rowsPerPage,
+            search: searchTerm
+        }),
+        keepPreviousData: true
     });
 
     const queryClient = useQueryClient();
@@ -246,16 +252,16 @@ const Products = () => {
         setIsModalOpen(true);
     }
 
-    const items = Array.isArray(products) ? products : (products?.data || []);
-    const finalFiltered = items.filter(p =>
-        p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-       // Slicing Logic for pagination here
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const paginatedData = finalFiltered .slice(startIndex, startIndex + rowsPerPage);
-    const totalPages = Math.ceil(finalFiltered .length / rowsPerPage) || 1;
-    //reset to page 1 when any changes...
+    // Since backend handles filtering and pagination, we just read the returned array
+    const products = Array.isArray(response) ? response : (response.data || []);
+    // Also pull metadata if available (if not, fallback to 1)
+    const totalPages = response.totalPages || Math.ceil(products.length / rowsPerPage) || 1;
+    const totalRecords = response.total || products.length;
+    
+    // We display rows directly (already paginated by backend)
+    const paginatedData = products;
+
+    // reset to page 1 when any search/filter changes
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, statusFilter]);
@@ -324,11 +330,11 @@ const Products = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-100">
-                            {isLoading ? (
+                            {isLoading || isFetching ? (
                                 <tr>
                                     <td colSpan="8" className="px-8 py-12 text-center text-slate-400 font-bold">Loading products...</td>
                                 </tr>
-                            ) : finalFiltered.length === 0 ? (
+                            ) : paginatedData.length === 0 ? (
                                 <tr>
                                     <td colSpan="8" className="px-8 py-12 text-center text-slate-400 font-bold">No products found</td>
                                 </tr>
@@ -392,33 +398,33 @@ const Products = () => {
                             )}
                         </tbody>
                     </table>
-                                        <div className="flex items-center justify-between p-8 border-t border-slate-50">
-    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-        Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, finalFiltered.length)} of {finalFiltered.length} entries
-    </p>
-    
-    <div className="flex items-center gap-2">
-        <button 
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(prev => prev - 1)}
-            className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
-        >
-            Previous
-        </button>
-        
-        <span className="text-[10px] font-black text-slate-400 px-2 uppercase tracking-widest">
-            Page {currentPage} of {totalPages}
-        </span>
-        
-        <button 
-            disabled={currentPage >= totalPages}
-            onClick={() => setCurrentPage(prev => prev + 1)}
-            className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
-        >
-            Next
-        </button>
-    </div>
-</div>
+                    <div className="flex items-center justify-between p-8 border-t border-slate-50">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            Showing products {paginatedData.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {(currentPage - 1) * rowsPerPage + paginatedData.length} of {totalRecords} entries
+                        </p>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                disabled={currentPage === 1 || isFetching}
+                                onClick={() => setCurrentPage(prev => prev - 1)}
+                                className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
+                            >
+                                Previous
+                            </button>
+
+                            <span className="text-[10px] font-black text-slate-400 px-2 uppercase tracking-widest">
+                                Page {currentPage} of {totalPages}
+                            </span>
+
+                            <button
+                                disabled={currentPage >= totalPages || isFetching}
+                                onClick={() => setCurrentPage(prev => prev + 1)}
+                                className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

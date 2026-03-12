@@ -566,10 +566,29 @@ autoTable(doc, {
     
     };
 
-    const { data: invoices = [], isLoading } = useQuery({
-        queryKey: ['invoices'],
-        queryFn: getInvoices,
+    const { data: response = {}, isLoading, isFetching } = useQuery({
+        queryKey: ['invoices', currentPage, searchTerm, statusFilter],
+        queryFn: () => getInvoices({
+            page: currentPage,
+            limit: rowsPerPage,
+            search: searchTerm,
+            status: statusFilter !== 'all' ? statusFilter : undefined
+        }),
+        keepPreviousData: true
     });
+
+    const invoices = Array.isArray(response) ? response : (response.data || []);
+    const totalRecords = response.total || invoices.length;
+    const totalPages = response.totalPages || Math.ceil(invoices.length / rowsPerPage) || 1;
+    
+    // reset to page 1 when any search/filter changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter]);
+
+    // For PDF and other local operations that need the full filtered list (if backend only returns page)
+    // In a real app, we'd have a separate 'export' endpoint.
+    const paginatedData = invoices;
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers'],
@@ -581,21 +600,8 @@ autoTable(doc, {
         queryFn: getProducts,
     });
 
-    const filtered = invoices.filter(inv => {
-        const matchesSearch =
-            (inv.invoice_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-            (inv.customer?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || (inv.status?.toLowerCase() || 'draft') === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
-    // Slicing Logic for pagination here
-const startIndex = (currentPage - 1) * rowsPerPage;
-const paginatedData = filtered.slice(startIndex, startIndex + rowsPerPage);
-const totalPages = Math.ceil(filtered.length / rowsPerPage) || 1;
-//reset to page 1 when any changes...
-useEffect(() => {
-    setCurrentPage(1);
-}, [searchTerm, statusFilter]);
+    // We use server-side filtering & pagination now
+    const filtered = invoices;
 
     const stats = {
         total: invoices.length,
@@ -714,9 +720,9 @@ useEffect(() => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {isLoading ? (
+                            {isLoading || isFetching ? (
                                 <tr><td colSpan={6} className="px-8 py-12 text-center text-slate-400 font-bold">Synchronizing ledger...</td></tr>
-                            ) : filtered.length === 0 ? (
+                            ) : paginatedData.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="px-8 py-20 text-center">
                                         <div className="flex flex-col items-center">
@@ -786,7 +792,7 @@ useEffect(() => {
                     </table>
                     <div className="flex items-center justify-between p-8 border-t border-slate-50">
     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-        Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, filtered.length)} of {filtered.length} entries
+        Showing invoices {paginatedData.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {(currentPage - 1) * rowsPerPage + paginatedData.length} of {totalRecords} entries
     </p>
     
     <div className="flex items-center gap-2">

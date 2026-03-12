@@ -73,6 +73,10 @@ const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass, s
 const Purchases = () => {
     const navigate = useNavigate();
     const { searchTerm, setSearchTerm } = useSearch();
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 5;
+    
+    // purchases keeps track of current paginated list
     const [purchases, setPurchases] = useState([]);
     const [stats, setStats] = useState({
         totalPurchases: 0,
@@ -115,41 +119,47 @@ const Purchases = () => {
         }
     });
 
-    const { data: purchasesList, isLoading, refetch } = useQuery({
-        queryKey: ['purchases'],
+    const { data: response = {}, isLoading, isFetching } = useQuery({
+        queryKey: ['purchases', currentPage, searchTerm],
         queryFn: async () => {
-            const res = await api.get('/purchases');
+            const res = await api.get('/purchases', {
+                params: {
+                    page: currentPage,
+                    limit: rowsPerPage,
+                    search: searchTerm
+                }
+            });
             const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
 
-            // Calculate stats
-            const now = new Date();
-            const monthly = data.filter(p => new Date(p.purchase_date).getMonth() === now.getMonth());
-            const total = data.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0);
-            const monthlyTotal = monthly.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0);
-            const vendors = new Set(data.map(p => p.supplier_id)).size;
+            // Stats from this page only, unless backend returns global stats. 
+            // In a real app we'd fetch global stats from a separate API.
+            const total = parseFloat(res.data?.totalAmount || 0) || data.reduce((sum, p) => sum + (parseFloat(p.total) || 0), 0);
+            
+            setStats(prev => ({
+                ...prev,
+                activeOrders: res.data?.total || data.length,
+                totalPurchases: total
+            }));
 
-            setStats({
-                totalPurchases: total,
-                monthlyPurchases: monthlyTotal,
-                vendorCount: vendors,
-                activeOrders: data.length
-            });
-
-            return data;
-        }
+            return res.data;
+        },
+        keepPreviousData: true
     });
+
+    const purchasesList = Array.isArray(response) ? response : (response.data || []);
+    const totalRecords = response.total || purchasesList.length;
+    const totalPages = response.totalPages || Math.ceil(purchasesList.length / rowsPerPage) || 1;
+
+    // reset to page 1 when any search changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
 
     useEffect(() => {
         if (purchasesList) {
-            const filtered = purchasesList.filter(p => {
-                const supplierName = suppliers.find(s => s.id === p.supplier_id)?.name || '';
-                const productName = products.find(prod => prod.id === p.product_id)?.name || '';
-                return supplierName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    productName.toLowerCase().includes(searchTerm.toLowerCase());
-            });
-            setPurchases(filtered);
+            setPurchases(purchasesList);
         }
-    }, [purchasesList, searchTerm, suppliers, products]);
+    }, [purchasesList]);
 
     const calculateTotal = (items, discount = 0, tax = 0, roundOff = 0) => {
         const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -485,6 +495,33 @@ const Purchases = () => {
                             )}
                         </tbody>
                     </table>
+                    <div className="flex items-center justify-between p-8 border-t border-slate-50">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            Showing purchases {purchases.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {(currentPage - 1) * rowsPerPage + purchases.length} of {totalRecords} entries
+                        </p>
+                        
+                        <div className="flex items-center gap-2">
+                            <button 
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(prev => prev - 1)}
+                                className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
+                            >
+                                Previous
+                            </button>
+                            
+                            <span className="text-[10px] font-black text-slate-400 px-2 uppercase tracking-widest">
+                                Page {currentPage} of {totalPages}
+                            </span>
+                            
+                            <button 
+                                disabled={currentPage >= totalPages}
+                                onClick={() => setCurrentPage(prev => prev + 1)}
+                                className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 

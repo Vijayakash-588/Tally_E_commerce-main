@@ -21,11 +21,26 @@ exports.create = async (req, res, next) => {
  */
 exports.findAll = async (req, res, next) => {
   try {
-    const products = await service.findAll();
+    const result = await service.findAll(req.query);
+    
+    // Check if result is paginated (has data object)
+    if (result && result.data && Array.isArray(result.data)) {
+      return res.json({
+        success: true,
+        data: result.data,
+        count: result.data.length,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
+      });
+    }
+
+    // Default: return as flat array
     res.json({
       success: true,
-      data: products,
-      count: products.length
+      data: result,
+      count: result.length
     });
   } catch (err) {
     next(err);

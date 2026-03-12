@@ -138,8 +138,50 @@ exports.createInvoice = async (data) => {
 /**
  * Get all invoices
  */
-exports.findAllInvoices = async () => {
+exports.findAllInvoices = async (query = {}) => {
+  const { page, limit, search } = query;
+  
+  let where = {};
+  if (search) {
+    where = {
+      OR: [
+        { invoice_number: { contains: search } },
+        { customer: { name: { contains: search } } }
+      ]
+    };
+  }
+
+  if (page && limit) {
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const [data, total] = await Promise.all([
+      prisma.invoices.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        include: {
+          customer: true,
+          line_items: true,
+          payments: true,
+        },
+        orderBy: { created_at: 'desc' }
+      }),
+      prisma.invoices.count({ where })
+    ]);
+
+    return {
+      data,
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber)
+    };
+  }
+
   return prisma.invoices.findMany({
+    where,
     include: {
       customer: true,
       line_items: true,
@@ -466,10 +508,65 @@ exports.getTaxRates = async () => {
 /**
  * Get all payments
  */
-exports.getPayments = async () => {
+exports.findAllPayments = async (query = {}) => {
+  const { page, limit, search, method } = query;
+  
+  let where = {};
+  if (method) {
+    if (method === 'bank') {
+      where.method = { not: 'cash' };
+    } else {
+      where.method = method;
+    }
+  }
+
+  if (search) {
+    const searchFilter = {
+      OR: [
+        { invoice: { invoice_number: { contains: search } } },
+        { invoice: { customer: { name: { contains: search } } } },
+        { reference: { contains: search } },
+        { notes: { contains: search } }
+      ]
+    };
+    where = { ...where, ...searchFilter };
+  }
+
+  if (page && limit) {
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const [data, total] = await Promise.all([
+      prisma.payments.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        include: {
+          invoice: {
+            include: { customer: true }
+          }
+        },
+        orderBy: { date: 'desc' }
+      }),
+      prisma.payments.count({ where })
+    ]);
+
+    return {
+      data,
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber)
+    };
+  }
+
   return prisma.payments.findMany({
+    where,
     include: {
-      invoice: true
+      invoice: {
+        include: { customer: true }
+      }
     },
     orderBy: { date: 'desc' }
   });

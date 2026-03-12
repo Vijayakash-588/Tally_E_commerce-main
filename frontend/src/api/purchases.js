@@ -1,8 +1,8 @@
 import api from './axios';
 
-export const getPurchases = async () => {
-    const response = await api.get('/purchases');
-    return response.data?.data || [];
+export const getPurchases = async (params = {}) => {
+    const response = await api.get('/purchases', { params });
+    return response.data;
 };
 
 export const getPurchaseById = async (id) => {

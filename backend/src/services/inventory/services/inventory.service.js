@@ -10,8 +10,46 @@ exports.create = async (data) => {
 /**
  * Get all stock movements
  */
-exports.findAll = async () => {
+exports.findAll = async (query = {}) => {
+  const { page, limit, search } = query;
+  
+  let where = {};
+  if (search) {
+    where = {
+      OR: [
+        { reference: { contains: search } },
+        { products: { name: { contains: search } } }
+      ]
+    };
+  }
+
+  if (page && limit) {
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const [data, total] = await Promise.all([
+      prisma.stock_items.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        include: { products: true },
+        orderBy: { txn_date: 'desc' }
+      }),
+      prisma.stock_items.count({ where })
+    ]);
+
+    return {
+      data,
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber)
+    };
+  }
+
   return prisma.stock_items.findMany({
+    where,
     include: { products: true },
     orderBy: { txn_date: 'desc' }
   });

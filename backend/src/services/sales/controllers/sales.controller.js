@@ -23,11 +23,26 @@ exports.createSale = async (req, res, next) => {
  */
 exports.findAllSales = async (req, res, next) => {
   try {
-    const sales = await service.findAllSales();
+    const result = await service.findAllSales(req.query);
+    
+    // Check if result is paginated (has data object)
+    if (result && result.data && Array.isArray(result.data)) {
+      return res.json({
+        success: true,
+        data: result.data,
+        count: result.data.length,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
+      });
+    }
+
+    // Default: return as flat array
     res.json({ 
       success: true, 
-      data: sales,
-      count: sales.length 
+      data: result,
+      count: result.length 
     });
   } catch (err) {
     next(err);
@@ -161,11 +176,26 @@ exports.createCustomer = async (req, res, next) => {
  */
 exports.findAllCustomers = async (req, res, next) => {
   try {
-    const customers = await service.findAllCustomers();
+    const result = await service.findAllCustomers(req.query);
+    
+    // Check if result is paginated (has data object)
+    if (result && result.data && Array.isArray(result.data)) {
+      return res.json({
+        success: true,
+        data: result.data,
+        count: result.data.length,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
+      });
+    }
+
+    // Default: return as flat array
     res.json({ 
       success: true, 
-      data: customers,
-      count: customers.length 
+      data: result,
+      count: result.length 
     });
   } catch (err) {
     next(err);

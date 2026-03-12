@@ -216,6 +216,8 @@ const Banking = () => {
     const [activeTab, setActiveTab] = useState('bank'); // 'bank' or 'cash'
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 10;
 
     const queryClient = useQueryClient();
 
@@ -235,13 +237,29 @@ const Banking = () => {
         }
     });
 
-    const { data: paymentsList = [], isLoading: loadingPayments } = useQuery({
-        queryKey: ['payments'],
+    const { data: paymentsResponse = {}, isLoading: loadingPayments, isFetching: fetchingPayments } = useQuery({
+        queryKey: ['payments', activeTab, currentPage, searchTerm],
         queryFn: async () => {
-            const res = await api.get('/invoices/payments');
-            return Array.isArray(res.data) ? res.data : (res.data?.data || []);
-        }
+            const res = await api.get('/invoices/payments', {
+                params: {
+                    page: currentPage,
+                    limit: rowsPerPage,
+                    search: searchTerm,
+                    method: activeTab
+                }
+            });
+            return res.data;
+        },
+        keepPreviousData: true
     });
+
+    const paymentsList = Array.isArray(paymentsResponse) ? paymentsResponse : (paymentsResponse.data || []);
+    const totalPayments = paymentsResponse.total || paymentsList.length;
+    const totalPages = paymentsResponse.totalPages || 1;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab, searchTerm]);
 
     const paymentsWithDetails = useMemo(() => {
         return paymentsList.map(p => ({
@@ -263,12 +281,7 @@ const Banking = () => {
 
     const totalCollected = paymentsWithDetails.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
 
-    const filteredHistory = paymentsWithDetails.filter(p => {
-        const matchSearch = (p.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()));
-        if (activeTab === 'bank') return matchSearch && p.method !== 'cash';
-        return matchSearch && p.method === 'cash';
-    });
+    const filteredHistory = paymentsWithDetails;
 
     return (
         <div className="max-w-[1600px] mx-auto space-y-12 pb-20">
@@ -441,6 +454,29 @@ const Banking = () => {
                                     )}
                                 </tbody>
                             </table>
+                        </div>
+                        {/* Pagination Controls */}
+                        <div className="p-8 border-t border-slate-50 flex items-center justify-between">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                Showing {paymentsList.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {(currentPage - 1) * rowsPerPage + paymentsList.length} of {totalPayments} entries
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1 || fetchingPayments}
+                                    className="px-4 py-2 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50"
+                                >
+                                    Prev
+                                </button>
+                                <span className="text-[10px] font-black text-slate-900 mx-2">Page {currentPage} of {totalPages}</span>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages || fetchingPayments}
+                                    className="px-4 py-2 border border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
+                            </div>
                         </div>
                     </div>
 

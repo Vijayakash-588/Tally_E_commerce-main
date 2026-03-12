@@ -14,13 +14,26 @@ const StockMovements = () => {
      const [statusFilter, setStatusFilter] = useState('all');
     const rowsPerPage = 5;
 
-    const { data: stockItems = [], isLoading } = useQuery({
-        queryKey: ['stock_items'],
+    // Query updated to include pagination & search params
+    const { data: response = {}, isLoading, isFetching } = useQuery({
+        queryKey: ['stock_items', currentPage, searchTerm, filterType],
         queryFn: async () => {
-            const res = await api.get('/inventory');
-            return Array.isArray(res.data) ? res.data : (res.data?.data || []);
-        }
+            const res = await api.get('/inventory', {
+                params: {
+                    page: currentPage,
+                    limit: rowsPerPage,
+                    search: searchTerm
+                    // You could also add filter: statusFilter if backend supported it
+                }
+            });
+            // Support both paginated and unpaginated responses
+            return res.data;
+        },
+        keepPreviousData: true
     });
+    
+    // Fallback if response isn't formatted as expected
+    const stockItems = Array.isArray(response) ? response : (response.data || []);
 
     const { data: products = [] } = useQuery({
         queryKey: ['products'],
@@ -51,14 +64,17 @@ const StockMovements = () => {
         const matchesType = filterType === 'all' || m.type === filterType;
         return matchesSearch && matchesType;
     });
-        // Slicing Logic for pagination here
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const paginatedData = filtered.slice(startIndex, startIndex + rowsPerPage);
-    const totalPages = Math.ceil(filtered.length / rowsPerPage) || 1;
-    //reset to page 1 when any changes...
+    // Also pull metadata if available (if not, fallback to 1)
+    const totalPages = response.totalPages || Math.ceil(filtered.length / rowsPerPage) || 1;
+    const totalRecords = response.total || filtered.length;
+    
+    // We display rows directly from filtered (already paginated by backend)
+    const paginatedData = filtered;
+
+    // reset to page 1 when any search/filter changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, statusFilter]);
+    }, [searchTerm, filterType]);
 
     // Calculate statistics
     const stats = {
@@ -176,11 +192,11 @@ const StockMovements = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-100">
-                            {isLoading ? (
+                            {isLoading || isFetching ? (
                                 <tr>
                                     <td colSpan="6" className="px-8 py-12 text-center text-slate-400 font-bold">Loading movements...</td>
                                 </tr>
-                            ) : filtered.length === 0 ? (
+                            ) : paginatedData.length === 0 ? (
                                 <tr>
                                     <td colSpan="6" className="px-8 py-12 text-center text-slate-400 font-bold">No movements found</td>
                                 </tr>
@@ -229,7 +245,7 @@ const StockMovements = () => {
                     </table>
                                         <div className="flex items-center justify-between p-8 border-t border-slate-50">
     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-        Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, filtered.length)} of {filtered.length} entries
+        Showing movements {paginatedData.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {(currentPage - 1) * rowsPerPage + paginatedData.length} of {totalRecords} entries
     </p>
     
     <div className="flex items-center gap-2">

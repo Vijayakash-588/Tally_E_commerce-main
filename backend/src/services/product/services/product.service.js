@@ -10,8 +10,48 @@ exports.create = async (data) => {
 /**
  * Get all products
  */
-exports.findAll = async () => {
+exports.findAll = async (query = {}) => {
+  const { page, limit, search } = query;
+  
+  let where = {};
+  if (search) {
+    where = {
+      OR: [
+        { name: { contains: search } },
+        { sku: { contains: search } },
+        { barcode: { contains: search } },
+        { category: { contains: search } },
+        { group: { contains: search } }
+      ]
+    };
+  }
+
+  if (page && limit) {
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const [data, total] = await Promise.all([
+      prisma.products.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        orderBy: { created_at: 'desc' }
+      }),
+      prisma.products.count({ where })
+    ]);
+
+    return {
+      data,
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber)
+    };
+  }
+
   return prisma.products.findMany({
+    where,
     orderBy: { created_at: 'desc' }
   });
 };

@@ -1,8 +1,9 @@
 import api from './axios';
 
-export const getProducts = async () => {
-    const response = await api.get('/products');
-    return response.data?.data || [];
+export const getProducts = async (params = {}) => {
+    const response = await api.get('/products', { params });
+    // Support paginated object { data: [], total, page... } natively
+    return response.data;
 };
 
 export const getProduct = async (id) => {

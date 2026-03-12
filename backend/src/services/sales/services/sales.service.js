@@ -41,8 +41,46 @@ exports.createSale = async (data) => {
 /**
  * Get all sales
  */
-exports.findAllSales = async () => {
+exports.findAllSales = async (query = {}) => {
+  const { page, limit, search } = query;
+  
+  let where = {};
+  if (search) {
+    where = {
+      OR: [
+        { customers: { name: { contains: search } } },
+        { products: { name: { contains: search } } }
+      ]
+    };
+  }
+
+  if (page && limit) {
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const [data, total] = await Promise.all([
+      prisma.sales.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        include: { customers: true, products: true },
+        orderBy: { sale_date: 'desc' }
+      }),
+      prisma.sales.count({ where })
+    ]);
+
+    return {
+      data,
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber)
+    };
+  }
+
   return prisma.sales.findMany({
+    where,
     include: { customers: true, products: true },
     orderBy: { sale_date: 'desc' }
   });
@@ -154,8 +192,47 @@ exports.createCustomer = async (data) => {
 /**
  * Get all customers
  */
-exports.findAllCustomers = async () => {
+exports.findAllCustomers = async (query = {}) => {
+  const { page, limit, search } = query;
+  
+  let where = {};
+  if (search) {
+    where = {
+      OR: [
+        { name: { contains: search } },
+        { email: { contains: search } },
+        { phone: { contains: search } },
+        { address: { contains: search } }
+      ]
+    };
+  }
+
+  if (page && limit) {
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const [data, total] = await Promise.all([
+      prisma.customers.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        orderBy: { created_at: 'desc' }
+      }),
+      prisma.customers.count({ where })
+    ]);
+
+    return {
+      data,
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber)
+    };
+  }
+
   return prisma.customers.findMany({
+    where,
     orderBy: { created_at: 'desc' }
   });
 };

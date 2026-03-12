@@ -22,11 +22,26 @@ exports.create = async (req, res, next) => {
  */
 exports.findAll = async (req, res, next) => {
   try {
-    const invoices = await service.findAllInvoices();
+    const result = await service.findAllInvoices(req.query);
+    
+    // Check if result is paginated (has data object)
+    if (result && result.data && Array.isArray(result.data)) {
+      return res.json({
+        success: true,
+        data: result.data,
+        count: result.data.length,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
+      });
+    }
+
+    // Default: return as flat array
     res.json({
       success: true,
-      data: invoices,
-      count: invoices.length
+      data: result,
+      count: result.length
     });
   } catch (err) {
     next(err);
@@ -327,8 +342,21 @@ exports.getOverdue = async (req, res, next) => {
  */
 exports.getPayments = async (req, res, next) => {
   try {
-    const payments = await service.getPayments();
-    res.json({ success: true, data: payments, count: payments.length });
+    const result = await service.findAllPayments(req.query);
+    
+    if (result && result.data && Array.isArray(result.data)) {
+      return res.json({
+        success: true,
+        data: result.data,
+        count: result.data.length,
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
+      });
+    }
+
+    res.json({ success: true, data: result, count: result.length });
   } catch (err) {
     next(err);
   }

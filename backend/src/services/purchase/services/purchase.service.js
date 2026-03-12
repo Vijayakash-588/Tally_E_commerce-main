@@ -43,8 +43,47 @@ exports.createPurchase = async (data) => {
 /**
  * Get all purchases
  */
-exports.findAllPurchases = async () => {
+exports.findAllPurchases = async (query = {}) => {
+  const { page, limit, search } = query;
+  
+  let where = {};
+  if (search) {
+    // Basic search on related supplier name or reference note if available
+    where = {
+      OR: [
+        { suppliers: { name: { contains: search } } },
+        { products: { name: { contains: search } } }
+      ]
+    };
+  }
+
+  if (page && limit) {
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const [data, total] = await Promise.all([
+      prisma.purchases.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        include: { suppliers: true, products: true },
+        orderBy: { purchase_date: 'desc' }
+      }),
+      prisma.purchases.count({ where })
+    ]);
+
+    return {
+      data,
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber)
+    };
+  }
+
   return prisma.purchases.findMany({
+    where,
     include: { suppliers: true, products: true },
     orderBy: { purchase_date: 'desc' }
   });
@@ -159,8 +198,47 @@ exports.createSupplier = async (data) => {
 /**
  * Get all suppliers
  */
-exports.findAllSuppliers = async () => {
+exports.findAllSuppliers = async (query = {}) => {
+  const { page, limit, search } = query;
+  
+  let where = {};
+  if (search) {
+    where = {
+      OR: [
+        { name: { contains: search } },
+        { email: { contains: search } },
+        { phone: { contains: search } },
+        { address: { contains: search } }
+      ]
+    };
+  }
+
+  if (page && limit) {
+    const pageNumber = parseInt(page);
+    const limitNumber = parseInt(limit);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const [data, total] = await Promise.all([
+      prisma.suppliers.findMany({
+        where,
+        skip,
+        take: limitNumber,
+        orderBy: { created_at: 'desc' }
+      }),
+      prisma.suppliers.count({ where })
+    ]);
+
+    return {
+      data,
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber)
+    };
+  }
+
   return prisma.suppliers.findMany({
+    where,
     orderBy: { created_at: 'desc' }
   });
 };

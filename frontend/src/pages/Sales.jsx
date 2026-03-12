@@ -34,15 +34,27 @@ const SaleModal = ({ isOpen, onClose, sale }) => {
         sale_date: new Date().toISOString().split('T')[0]
     });
 
-    const { data: customers = [] } = useQuery({
-        queryKey: ['customers'],
-        queryFn: customersApi.getCustomers
-    });
+const { data: customers = [] } = useQuery({
+    queryKey: ['customers'],
+    queryFn: async () => {
+        const res = await customersApi.getCustomers();
+        // Log this to see what your API actually returns
+        // console.log('Customers API Response:', res); 
+        
+        // Ensure we return the array hidden inside res.data or res.data.data
+        const data = res.data?.data || res.data || res;
+        return Array.isArray(data) ? data : [];
+    }
+});
 
-    const { data: products = [] } = useQuery({
-        queryKey: ['products'],
-        queryFn: productsApi.getProducts
-    });
+const { data: products = [] } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+        const res = await productsApi.getProducts();
+        const data = res.data?.data || res.data || res;
+        return Array.isArray(data) ? data : [];
+    }
+});
 
     const { data: taxRates = [] } = useQuery({
         queryKey: ['taxRates'],
@@ -310,11 +322,24 @@ const Sales = () => {
         const rowsPerPage = 5;
         const [statusFilter,setStatusFilter] = useState("all");
 
-    // Fetch Invoices instead of Sales
-    const { data: sales = [], isLoading } = useQuery({
-        queryKey: ['invoices'],
-        queryFn: invoicesApi.getInvoices
+    // Fetch Invoices instead of Sales, with pagination
+    const { data: response = {}, isLoading, isFetching } = useQuery({
+        queryKey: ['invoices', currentPage, searchTerm, statusFilter],
+        queryFn: async () => {
+            const res = await api.get('/invoices', {
+                params: {
+                    page: currentPage,
+                    limit: rowsPerPage,
+                    search: searchTerm
+                    // You could also add status: statusFilter if supported
+                }
+            });
+            return res.data;
+        },
+        keepPreviousData: true
     });
+    
+    const sales = Array.isArray(response) ? response : (response.data || []);
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers'],
@@ -357,11 +382,14 @@ const Sales = () => {
             sale.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
     });
-        // Slicing Logic for pagination here
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const paginatedData = filtered.slice(startIndex, startIndex + rowsPerPage);
-    const totalPages = Math.ceil(filtered.length / rowsPerPage) || 1;
-    //reset to page 1 when any changes...
+    // Also pull metadata if available (if not, fallback to 1)
+    const totalPages = response.totalPages || Math.ceil(filtered.length / rowsPerPage) || 1;
+    const totalRecords = response.total || filtered.length;
+    
+    // We display rows directly from filtered (already paginated by backend)
+    const paginatedData = filtered;
+
+    // reset to page 1 when any search/filter changes
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, statusFilter]);
@@ -470,12 +498,12 @@ const Sales = () => {
                     <h3 className="text-xl font-black text-slate-900">Sales Transactions</h3>
                 </div>
 
-                {isLoading ? (
+                {isLoading || isFetching ? (
                     <div className="p-12 text-center">
                         <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
                         <p className="text-slate-500">Loading sales...</p>
                     </div>
-                ) : filtered.length === 0 ? (
+                ) : paginatedData.length === 0 ? (
                     <div className="p-12 text-center">
                         <ShoppingCart className="w-16 h-16 text-slate-300 mx-auto mb-4" />
                         <p className="text-slate-500 mb-4">No sales found</p>
@@ -572,7 +600,7 @@ const Sales = () => {
                         </table>
                                             <div className="flex items-center justify-between p-8 border-t border-slate-50">
     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-        Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, filtered.length)} of {filtered.length} entries
+        Showing sales {paginatedData.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {(currentPage - 1) * rowsPerPage + paginatedData.length} of {totalRecords} entries
     </p>
     
     <div className="flex items-center gap-2">

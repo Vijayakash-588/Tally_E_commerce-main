@@ -136,12 +136,22 @@ const Customers = () => {
     const rowsPerPage = 5; 
     const [statusFilter,setStatusFilter] = useState("all");
 
-    const { data: customers, isLoading } = useQuery({
-        queryKey: ['customers'],
+    // Query updated to include pagination & search params
+    const { data: response = {}, isLoading, isFetching } = useQuery({
+        queryKey: ['customers', currentPage, searchTerm, statusFilter],
         queryFn: async () => {
-            const res = await api.get('/customers');
-            return Array.isArray(res.data) ? res.data : (res.data?.data || []);
-        }
+            const res = await api.get('/customers', {
+                params: {
+                    page: currentPage,
+                    limit: rowsPerPage,
+                    search: searchTerm
+                    // You could also add filter: statusFilter if backend supported it
+                }
+            });
+            // Support both paginated and unpaginated responses
+            return res.data;
+        },
+        keepPreviousData: true
     });
 
     const queryClient = useQueryClient();
@@ -165,16 +175,16 @@ const Customers = () => {
         }
     };
 
-    const items = customers || [];
-    const filtered = items.filter(c =>
-        c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-        // Slicing Logic for pagination here
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const paginatedData = filtered.slice(startIndex, startIndex + rowsPerPage);
-    const totalPages = Math.ceil(filtered.length / rowsPerPage) || 1;
-    //reset to page 1 when any changes...
+    // Since backend handles filtering and pagination, we just read the returned array
+    const filtered = Array.isArray(response) ? response : (response.data || []);
+    // Also pull metadata if available (if not, fallback to 1)
+    const totalPages = response.totalPages || Math.ceil(filtered.length / rowsPerPage) || 1;
+    const totalRecords = response.total || filtered.length;
+    
+    // We display rows directly from filtered (already paginated by backend)
+    const paginatedData = filtered;
+
+    // reset to page 1 when any search/filter changes
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, statusFilter]);
@@ -240,11 +250,11 @@ const Customers = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-100">
-                            {isLoading ? (
+                            {isLoading || isFetching ? (
                                 <tr>
                                     <td colSpan="5" className="px-8 py-12 text-center text-slate-400 font-bold">Loading customers...</td>
                                 </tr>
-                            ) : filtered.length === 0 ? (
+                            ) : paginatedData.length === 0 ? (
                                 <tr>
                                     <td colSpan="5" className="px-8 py-12 text-center text-slate-400 font-bold">No customers found</td>
                                 </tr>
@@ -286,7 +296,7 @@ const Customers = () => {
                     </table>
                                         <div className="flex items-center justify-between p-8 border-t border-slate-50">
     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-        Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, filtered.length)} of {filtered.length} entries
+        Showing customers {paginatedData.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {(currentPage - 1) * rowsPerPage + paginatedData.length} of {totalRecords} entries
     </p>
     
     <div className="flex items-center gap-2">

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect} from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
     Package,
     Search,
@@ -231,51 +232,59 @@ const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass, s
 
 const Inventory = () => {
     const navigate = useNavigate();
-    const [products, setProducts] = useState([]);
-
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 10;
     const { searchTerm, setSearchTerm } = useSearch();
     const [filterGroup, setFilterGroup] = useState('All');
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const productsRes = await api.get('/products');
-            const productsData = Array.isArray(productsRes.data) ? productsRes.data : (productsRes.data?.data || []);
-            setProducts(productsData);
-            setError(null);
-        } catch (err) {
-            console.error('Error fetching inventory:', err);
-            const errorMsg = err.response?.data?.message || 'Failed to load inventory';
-            setError(errorMsg);
-            toast.error(errorMsg);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const filteredProducts = products.filter(product => {
-        const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesGroup = filterGroup === 'All' || product.group === filterGroup;
-        return matchesSearch && matchesGroup;
+    const { data: response = {}, isLoading, isFetching, refetch } = useQuery({
+        queryKey: ['products', currentPage, searchTerm, filterGroup],
+        queryFn: async () => {
+            const res = await api.get('/products', {
+                params: {
+                    page: currentPage,
+                    limit: rowsPerPage,
+                    search: searchTerm,
+                    group: filterGroup !== 'All' ? filterGroup : undefined
+                }
+            });
+            return res.data;
+        },
+        keepPreviousData: true
     });
 
-    const groups = ['All', ...new Set(products.filter(p => p.group).map(p => p.group))];
+    const products = Array.isArray(response) ? response : (response.data || []);
+    const totalRecords = response.total || products.length;
+    const totalPages = response.totalPages || Math.ceil(products.length / rowsPerPage) || 1;
 
-    // Stats Calculations
-    const totalItems = products.length;
-    const lowStockItems = products.filter(p => (p.opening_qty || 0) < 10).length;
-    const outOfStockItems = products.filter(p => (p.opening_qty || 0) === 0).length;
+    // We might need ALL products for group filter dropdown and general stats
+    // In a real app, these should come from separate specialized endpoints.
+    const { data: allProducts = [] } = useQuery({
+        queryKey: ['products', 'all'],
+        queryFn: async () => {
+            const res = await api.get('/products');
+            return Array.isArray(res.data) ? res.data : (res.data?.data || []);
+        }
+    });
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterGroup]);
+
+    const fetchData = refetch;
+
+    const filteredProducts = products;
+
+    const groups = ['All', ...new Set(allProducts.filter(p => p.group).map(p => p.group))];
+
+    // Stats Calculations - use allProducts for global context
+    const totalItems = allProducts.length;
+    const lowStockItems = allProducts.filter(p => (p.opening_qty || 0) < 10).length;
+    const outOfStockItems = allProducts.filter(p => (p.opening_qty || 0) === 0).length;
     const activeCategories = groups.length - 1; // Exclude 'All'
 
-    if (loading) {
+    if (isLoading && !isFetching) {
         return (
             <div className="flex flex-col justify-center items-center h-[60vh] space-y-4">
                 <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -390,13 +399,18 @@ const Inventory = () => {
                 <div className="md:col-span-3 lg:col-span-2 flex items-center justify-center border-l border-slate-100 h-full">
                     <div className="text-center">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Items Found</p>
-                        <p className="text-xl font-black text-blue-600">{filteredProducts.length}</p>
+                        <p className="text-xl font-black text-blue-600">{totalRecords}</p>
                     </div>
                 </div>
             </div>
 
             {/* Data Sheet Grid */}
-            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden min-h-[500px] flex flex-col">
+            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden min-h-[500px] flex flex-col relative">
+                {isFetching && (
+                    <div className="absolute inset-0 bg-white/50 backdrop-blur-[2px] flex items-center justify-center z-50 rounded-[2.5rem]">
+                        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-lg" />
+                    </div>
+                )}
                 <div className="overflow-x-auto flex-1">
                     <table className="min-w-full">
                         <thead>
@@ -479,11 +493,23 @@ const Inventory = () => {
 
                 <div className="p-8 border-t border-slate-50 flex items-center justify-between bg-slate-50/20">
                     <p className="text-xs font-bold text-slate-400 tracking-tight uppercase">
-                        Sheet <span className="text-slate-900">01</span> · Rendering <span className="text-slate-900">{filteredProducts.length}</span> items
+                        Sheet <span className="text-slate-900">{currentPage}</span> · Rendering <span className="text-slate-900">{filteredProducts.length}</span> of <span className="text-slate-900">{totalRecords}</span> items
                     </p>
                     <div className="flex space-x-2">
-                        <button className="px-4 py-2 border border-slate-100 bg-white rounded-xl text-[10px] font-black text-slate-400 uppercase disabled:opacity-50">Prev</button>
-                        <button className="px-4 py-2 border border-slate-100 bg-white rounded-xl text-[10px] font-black text-slate-900 uppercase">Next</button>
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1 || isFetching}
+                            className="px-4 py-2 border border-slate-100 bg-white rounded-xl text-[10px] font-black text-slate-400 uppercase disabled:opacity-50 shadow-sm hover:bg-slate-50"
+                        >
+                            Prev
+                        </button>
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages || isFetching}
+                            className="px-4 py-2 border border-slate-100 bg-white rounded-xl text-[10px] font-black text-slate-900 uppercase shadow-sm hover:bg-slate-50"
+                        >
+                            Next
+                        </button>
                     </div>
                 </div>
             </div>

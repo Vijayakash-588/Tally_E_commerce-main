@@ -1,8 +1,9 @@
 import api from './axios';
 
-export const getCustomers = async () => {
-    const response = await api.get('/customers');
-    return response.data?.data || [];
+export const getCustomers = async (params = {}) => {
+    const response = await api.get('/customers', { params });
+    // If backend returns paginated object { data: [], total, page... }, return it fully
+    return response.data;
 };
 
 export const getCustomerById = async (id) => {
