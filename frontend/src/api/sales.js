@@ -36,3 +36,8 @@ export const deleteSale = async (id) => {
     const response = await api.delete(`/sales/${id}`);
     return response.data;
 };
+
+export const getDashboardSummary = async () => {
+    const response = await api.get('/sales/dashboard/summary');
+    return response.data?.data;
+};

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/sales.controller');
+const dashboardController = require('../controllers/dashboard.controller');
 const auth = require('../../../middlewares/auth');
 
 /**
@@ -9,6 +10,19 @@ const auth = require('../../../middlewares/auth');
  *   name: Sales
  *   description: Sales management
  */
+
+// DASHBOARD ROUTES
+/**
+ * @swagger
+ * /api/sales/dashboard/summary:
+ *   get:
+ *     summary: Get dashboard summary data
+ *     tags: [Sales]
+ *     responses:
+ *       200:
+ *         description: Dashboard summary data
+ */
+router.get('/dashboard/summary', dashboardController.getDashboardSummary);
 
 // SALES ROUTES
 

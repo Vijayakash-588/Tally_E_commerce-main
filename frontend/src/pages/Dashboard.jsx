@@ -17,12 +17,22 @@ import {
     FileText,
     Zap,
     Search,
-    X
+    X,
+    RefreshCcw
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
+import { getDashboardSummary } from '../api/sales';
+
+const typeColors = {
+    'sales': 'bg-emerald-50 text-emerald-600',
+    'purchase': 'bg-rose-50 text-rose-600',
+    'payment': 'bg-blue-50 text-blue-600',
+    'receipt': 'bg-amber-50 text-amber-600'
+};
 
 const Sparkline = ({ color }) => (
     <div className="h-8 w-24">
@@ -73,46 +83,25 @@ const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass, s
     </div>
 );
 
-const GatewayItem = ({ title, subtitle, icon: Icon, color, to, shortcut }) => (
-    <NavLink
-        to={to || '#'}
-        className="group flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all duration-300"
-    >
-        <div className="flex items-center space-x-4">
-            <div className={clsx("w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-transform duration-500 group-hover:scale-110", color)}>
-                <Icon className="w-6 h-6 text-white" />
-            </div>
-            <div>
-                <h3 className="text-sm font-black text-slate-900">{title}</h3>
-                <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-tighter">{subtitle}</p>
-            </div>
-        </div>
-        <div className="flex items-center space-x-3">
-            <span className="hidden group-hover:block text-[10px] font-black text-slate-300 bg-white border border-slate-100 px-2 py-1 rounded-lg">
-                {shortcut}
-            </span>
-            <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-900 group-hover:translate-x-1 transition-all" />
-        </div>
-    </NavLink>
-);
-
-const TransactionRow = ({ date, type, reference, party, amount, typeColors }) => (
+const TransactionRow = ({ date, type, reference, party, amount }) => (
     <tr className="group hover:bg-slate-50 transition-all cursor-default">
         <td className="px-8 py-5 whitespace-nowrap">
             <div className="flex items-center">
                 <div className="w-2 h-2 rounded-full bg-slate-200 mr-4" />
-                <span className="text-sm font-bold text-slate-500">{date}</span>
+                <span className="text-sm font-bold text-slate-500">{new Date(date).toLocaleDateString()}</span>
             </div>
         </td>
         <td className="px-8 py-5 whitespace-nowrap">
             <span className={clsx(
                 "px-3 py-1.5 text-[10px] font-black rounded-lg uppercase tracking-widest",
-                typeColors[type]
+                typeColors[type.toLowerCase()] || 'bg-slate-50 text-slate-600'
             )}>
                 {type}
             </span>
         </td>
-        <td className="px-8 py-5 whitespace-nowrap text-sm font-black text-slate-400 tracking-tighter group-hover:text-slate-900 transition-colors">{reference}</td>
+        <td className="px-8 py-5 whitespace-nowrap text-sm font-black text-slate-400 tracking-tighter group-hover:text-slate-900 transition-colors">
+            {reference}
+        </td>
         <td className="px-8 py-5 whitespace-nowrap">
             <div className="flex items-center">
                 <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center mr-3 text-[10px] font-black text-slate-400 uppercase">
@@ -123,127 +112,77 @@ const TransactionRow = ({ date, type, reference, party, amount, typeColors }) =>
         </td>
         <td className={clsx(
             "px-8 py-5 whitespace-nowrap text-sm font-black text-right tracking-tight",
-            type === 'payment' || type === 'purchase' ? 'text-red-500' : 'text-slate-900'
+            type.toLowerCase() === 'payment' || type.toLowerCase() === 'purchase' ? 'text-red-500' : 'text-slate-900'
         )}>
-            {amount}
+            ₹{parseFloat(amount || 0).toFixed(2)}
         </td>
     </tr>
 );
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const { searchTerm, setSearchTerm } = useSearch();
-    const [stats, setStats] = useState({
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 5;
+
+    const { data: dashboardData, isLoading, isError, refetch } = useQuery({
+        queryKey: ['dashboard-summary'],
+        queryFn: getDashboardSummary,
+        refetchInterval: 60000,
+        keepPreviousData: true
+    });
+
+    const stats = dashboardData?.stats || {
         totalSales: 0,
         totalPurchases: 0,
         totalProducts: 0,
         activeProducts: 0,
         monthlySales: 0,
         monthlyPurchases: 0
-    });
-    const [recentTransactions, setRecentTransactions] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
-    const rowsPerPage = 5;
-    const [statusFilter, setStatusFilter] = useState('all');
+    };
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                setLoading(true);
-                const [salesRes, purchasesRes, productsRes] = await Promise.all([
-                    api.get('/sales'),
-                    api.get('/purchases'),
-                    api.get('/products')
-                ]);
-
-                const salesData = Array.isArray(salesRes.data) ? salesRes.data : (salesRes.data?.data || []);
-                const purchasesData = Array.isArray(purchasesRes.data) ? purchasesRes.data : (purchasesRes.data?.data || []);
-                const productsData = Array.isArray(productsRes.data) ? productsRes.data : (productsRes.data?.data || []);
-
-                const now = new Date();
-                const currentMonth = salesData.filter(s => new Date(s.sale_date).getMonth() === now.getMonth());
-                const currentMonthPurchases = purchasesData.filter(p => new Date(p.purchase_date).getMonth() === now.getMonth());
-
-                const totalSales = salesData.reduce((sum, sale) => sum + (parseFloat(sale.total) || 0), 0);
-                const totalPurchases = purchasesData.reduce((sum, purchase) => sum + (parseFloat(purchase.total) || 0), 0);
-                const monthlySales = currentMonth.reduce((sum, sale) => sum + (parseFloat(sale.total) || 0), 0);
-                const monthlyPurchases = currentMonthPurchases.reduce((sum, purchase) => sum + (parseFloat(purchase.total) || 0), 0);
-                const activeProducts = productsData.filter(p => p.is_active).length;
-
-                setStats({
-                    totalSales: totalSales,
-                    totalPurchases: totalPurchases,
-                    totalProducts: productsData.length,
-                    activeProducts: activeProducts,
-                    monthlySales: monthlySales,
-                    monthlyPurchases: monthlyPurchases
-                });
-
-                const transactions = [
-                    ...salesData.slice(0, 5).map(s => ({
-                        date: new Date(s.sale_date).toLocaleDateString(),
-                        type: 'Sales',
-                        reference: `SALE-${s.id.substring(0, 8)}`,
-                        party: s.customers?.name || 'Customer',
-                        amount: `₹${parseFloat(s.total).toFixed(2)}`
-                    })),
-                    ...purchasesData.slice(0, 5).map(p => ({
-                        date: new Date(p.purchase_date).toLocaleDateString(),
-                        type: 'Purchase',
-                        reference: `PUR-${p.id.substring(0, 8)}`,
-                        party: p.suppliers?.name || 'Supplier',
-                        amount: `₹${parseFloat(p.total).toFixed(2)}`
-                    }))
-                ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
-
-                setRecentTransactions(transactions);
-            } catch (err) {
-                console.error('Error fetching dashboard data:', err);
-                toast.error('Failed to load dashboard data');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDashboardData();
-    }, []);
+    const recentTransactions = dashboardData?.recentTransactions || [];
 
     const filteredTransactions = useMemo(() => {
         if (!searchTerm) return recentTransactions;
+        const s = searchTerm.toLowerCase();
         return recentTransactions.filter(txn =>
-            txn.party.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            txn.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            txn.type.toLowerCase().includes(searchTerm.toLowerCase())
+            txn.party.toLowerCase().includes(s) ||
+            txn.reference.toLowerCase().includes(s) ||
+            txn.type.toLowerCase().includes(s)
         );
     }, [recentTransactions, searchTerm]);
-        // Slicing Logic for pagination here
+
     const startIndex = (currentPage - 1) * rowsPerPage;
     const paginatedData = filteredTransactions.slice(startIndex, startIndex + rowsPerPage);
     const totalPages = Math.ceil(filteredTransactions.length / rowsPerPage) || 1;
-    //reset to page 1 when any changes...
+
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, statusFilter]);
+    }, [searchTerm]);
 
-    const typeColors = {
-        'Sales': 'bg-emerald-50 text-emerald-600',
-        'Purchase': 'bg-rose-50 text-rose-600',
-        'Payment': 'bg-blue-50 text-blue-600',
-        'Receipt': 'bg-amber-50 text-amber-600'
-    };
-
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="flex flex-col justify-center items-center h-[60vh] space-y-4">
-                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <RefreshCcw className="w-12 h-12 text-blue-600 animate-spin" />
                 <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Loading Gateway...</p>
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className="flex flex-col justify-center items-center h-[60vh] space-y-4">
+                <div className="p-4 bg-rose-50 text-rose-600 rounded-2xl flex flex-col items-center gap-2">
+                    <p className="font-black uppercase tracking-widest text-xs">Sync Failed</p>
+                    <button onClick={() => refetch()} className="px-6 py-2 bg-rose-600 text-white rounded-xl font-bold text-sm">Retry Connection</button>
+                </div>
             </div>
         );
     }
 
     return (
         <div className="max-w-[1600px] mx-auto space-y-12 pb-20">
-
             {/* Welcome Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
@@ -252,14 +191,14 @@ const Dashboard = () => {
                 </div>
                 <div className="flex items-center space-x-4">
                     <button
-                        onClick={() => window.location.href = '/banking'}
-                        className="flex items-center px-6 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm text-sm font-black text-slate-600 hover:bg-slate-50 transition-all">
+                        onClick={() => navigate('/banking')}
+                        className="flex items-center px-6 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm text-sm font-black text-slate-600 hover:bg-slate-50 transition-all font-black uppercase tracking-widest text-[10px]">
                         <History className="w-4 h-4 mr-2" />
                         Voucher History
                     </button>
                     <button
-                        onClick={() => window.location.href = '/sales-invoices'}
-                        className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/30 text-sm font-black hover:bg-blue-700 transition-all">
+                        onClick={() => navigate('/sales-invoices')}
+                        className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/30 text-sm font-black hover:bg-blue-700 transition-all font-black uppercase tracking-widest text-[10px]">
                         <Plus className="w-4 h-4 mr-2" />
                         Add Voucher
                     </button>
@@ -307,7 +246,6 @@ const Dashboard = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-10">
-                {/* Recent Activities Table - Now Full Width */}
                 <div className="w-full">
                     <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden h-full flex flex-col hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-500">
                         <div className="p-10 pb-6 space-y-6">
@@ -317,20 +255,17 @@ const Dashboard = () => {
                                     <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-tighter">Real-time ledger entries and voucher history</p>
                                 </div>
                                 <div className="flex items-center space-x-3">
-                                    <button className="px-6 py-3 bg-slate-50 text-slate-600 rounded-[1.25rem] text-xs font-black uppercase hover:bg-slate-100 transition-all border border-slate-100 flex items-center">
-                                        <Download className="w-4 h-4 mr-2" />
-                                        Export Data
+                                    <button className="px-6 py-3 bg-slate-50 text-slate-600 rounded-[1.25rem] text-[10px] font-black uppercase hover:bg-slate-100 transition-all border border-slate-100 flex items-center">
+                                        <Download className="w-4 h-4 mr-2" /> Export
                                     </button>
-                                    <button className="px-6 py-3 bg-blue-50 text-blue-600 rounded-[1.25rem] text-xs font-black uppercase hover:bg-blue-100 transition-all border border-blue-100">
-                                        View Analytics
+                                    <button className="px-6 py-3 bg-blue-50 text-blue-600 rounded-[1.25rem] text-[10px] font-black uppercase hover:bg-blue-100 transition-all border border-blue-100">
+                                        Analytics
                                     </button>
                                 </div>
                             </div>
 
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                                    <Search className="w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                                </div>
+                                <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input
                                     type="text"
                                     placeholder="Search activity by party, reference or voucher type..."
@@ -339,10 +274,7 @@ const Dashboard = () => {
                                     className="w-full pl-16 pr-6 py-5 bg-slate-50 border-2 border-transparent rounded-[2rem] focus:bg-white focus:border-blue-500 focus:ring-8 focus:ring-blue-50 transition-all outline-none font-black text-slate-900 shadow-inner placeholder:text-slate-400"
                                 />
                                 {searchTerm && (
-                                    <button
-                                        onClick={() => setSearchTerm('')}
-                                        className="absolute inset-y-0 right-6 flex items-center text-slate-300 hover:text-slate-600 transition-colors"
-                                    >
+                                    <button onClick={() => setSearchTerm('')} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-600">
                                         <X className="w-5 h-5" />
                                     </button>
                                 )}
@@ -357,71 +289,48 @@ const Dashboard = () => {
                                         <th className="px-10 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Voucher Type</th>
                                         <th className="px-10 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Reference No.</th>
                                         <th className="px-10 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Counter Party</th>
-                                        <th className="px-10 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Voucher Amount</th>
+                                        <th className="px-10 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50 text-slate-800">
-                                    {filteredTransactions.length > 0 ? (
+                                    {paginatedData.length > 0 ? (
                                         paginatedData.map((txn, idx) => (
                                             <TransactionRow
-                                                key={idx}
+                                                key={`${txn.type}-${txn.id}-${idx}`}
                                                 date={txn.date}
-                                                type={txn.type.toLowerCase()}
+                                                type={txn.type}
                                                 reference={txn.reference}
                                                 party={txn.party}
                                                 amount={txn.amount}
-                                                typeColors={typeColors}
                                             />
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="5" className="px-10 py-32 text-center">
-                                                <div className="flex flex-col items-center">
-                                                    <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center mb-6 text-slate-200">
-                                                        <FileText className="w-10 h-10" />
-                                                    </div>
-                                                    <p className="text-lg font-black text-slate-400 uppercase tracking-widest">No recent transactions</p>
-                                                    <p className="text-sm font-bold text-slate-300 mt-2">Any new vouchers will appear here automatically</p>
-                                                </div>
+                                            <td colSpan="5" className="px-10 py-32 text-center text-slate-400 uppercase font-black tracking-widest text-xs">
+                                                No recent transactions found
                                             </td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
-                                                <div className="flex items-center justify-between p-8 border-t border-slate-50">
-    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-        Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, filteredTransactions.length)} of {filteredTransactions.length} entries
-    </p>
-    
-    <div className="flex items-center gap-2">
-        <button 
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(prev => prev - 1)}
-            className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
-        >
-            Previous
-        </button>
-        
-        <span className="text-[10px] font-black text-slate-400 px-2 uppercase tracking-widest">
-            Page {currentPage} of {totalPages}
-        </span>
-        
-        <button 
-            disabled={currentPage >= totalPages}
-            onClick={() => setCurrentPage(prev => prev + 1)}
-            className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all border border-slate-100"
-        >
-            Next
-        </button>
-    </div>
-</div>
-                        </div>
-
-                        <div className="p-8 border-t border-slate-50 bg-slate-50/20 text-center">
-                            <button className="text-blue-600 text-sm font-black uppercase tracking-widest hover:underline flex items-center justify-center mx-auto">
-                                View Detailed Ledger Reports
-                                <ArrowRight className="w-4 h-4 ml-2" />
-                            </button>
+                            <div className="flex items-center justify-between p-8 border-t border-slate-50">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    Showing {paginatedData.length} of {filteredTransactions.length} entries
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        disabled={currentPage === 1}
+                                        onClick={() => setCurrentPage(p => p - 1)}
+                                        className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 border border-slate-100"
+                                    >Prev</button>
+                                    <span className="text-[10px] font-black text-slate-400 px-2 uppercase">Page {currentPage} of {totalPages}</span>
+                                    <button
+                                        disabled={currentPage >= totalPages}
+                                        onClick={() => setCurrentPage(p => p + 1)}
+                                        className="px-4 py-2 bg-slate-50 text-slate-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white disabled:opacity-30 border border-slate-100"
+                                    >Next</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -431,4 +340,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
