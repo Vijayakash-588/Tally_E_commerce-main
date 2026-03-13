@@ -191,13 +191,13 @@ const Dashboard = () => {
                 </div>
                 <div className="flex items-center space-x-4">
                     <button
-                        onClick={() => navigate('/banking')}
+                        onClick={() => navigate('/Banking')}
                         className="flex items-center px-6 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm text-sm font-black text-slate-600 hover:bg-slate-50 transition-all font-black uppercase tracking-widest text-[10px]">
                         <History className="w-4 h-4 mr-2" />
                         Voucher History
                     </button>
                     <button
-                        onClick={() => navigate('/sales-invoices')}
+                        onClick={() => navigate('/sales')}
                         className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-600/30 text-sm font-black hover:bg-blue-700 transition-all font-black uppercase tracking-widest text-[10px]">
                         <Plus className="w-4 h-4 mr-2" />
                         Add Voucher
