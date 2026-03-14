@@ -1,16 +1,55 @@
-# React + Vite
+# Tally ERP - Frontend Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend for Tally ERP is a modern, responsive React application built for high-performance inventory and e-commerce management.
 
-Currently, two official plugins are available:
+## 🛠️ Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Framework**: [React 19](https://react.dev/)
+- **Build Tool**: [Vite](https://vitejs.dev/)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Routing**: [React Router Dom v7](https://reactrouter.com/)
+- **Data Fetching**: [TanStack Query v5](https://tanstack.com/query/latest)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Notifications**: [React Hot Toast](https://react-hot-toast.com/)
 
-## React Compiler
+## 🚀 Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
 
-## Expanding the ESLint configuration
+2. **Run Development Server**:
+   ```bash
+   npm run dev
+   ```
+   The application will be available at `http://localhost:5173`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+3. **Build for Production**:
+   ```bash
+   npm run build
+   ```
+
+## 🏗️ Project Architecture
+
+The application follows a standard modular structure:
+
+- **src/pages**: Contains the main view components (Dashboard, Inventory, Invoices, etc.).
+- **src/components**: Reusable UI elements (Buttons, Tables, Forms, Layouts).
+- **src/api**: Axios-based API service layer for communicating with the backend.
+- **src/context**: React Context providers for global state (Auth, Search).
+
+## 📄 Key Features
+
+- **Dashboard**: Real-time overview of business metrics.
+- **Inventory Management**: Track stock levels, movements, and adjustments.
+- **Sales & Purchases**: Manage orders, customers, and suppliers.
+- **Invoices**: Generate and view sales and purchase invoices with PDF support.
+- **AI Assistant**: Smart chatbot for quick queries and insights.
+
+## ⚙️ Configuration
+
+The API connection is configured in `src/api/axios.js`. By default, it points to `http://localhost:5000/api`.
+
+---
+*Note: Ensure the backend server is running for full functionality.*
