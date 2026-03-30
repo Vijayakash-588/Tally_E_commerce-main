@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/invoice.controller');
 const auth = require('../../../middlewares/auth');
+const { authorize } = auth;
 
 /**
  * @swagger
@@ -67,7 +68,7 @@ const auth = require('../../../middlewares/auth');
  *       401:
  *         description: Unauthorized
  */
-router.post('/', auth, controller.create);
+router.post('/', auth, authorize('admin', 'manager'), controller.create);
 router.get('/', auth, controller.findAll);
 
 /**
@@ -270,8 +271,8 @@ router.get('/range', auth, controller.getByDateRange);
  *         description: Unauthorized
  */
 router.get('/:id', auth, controller.findById);
-router.put('/:id', auth, controller.update);
-router.delete('/:id', auth, controller.remove);
+router.put('/:id', auth, authorize('admin', 'manager'), controller.update);
+router.delete('/:id', auth, authorize('admin'), controller.remove);
 
 /**
  * @swagger
@@ -305,7 +306,7 @@ router.delete('/:id', auth, controller.remove);
  *       401:
  *         description: Unauthorized
  */
-router.patch('/:id/status', auth, controller.updateStatus);
+router.patch('/:id/status', auth, authorize('admin', 'manager'), controller.updateStatus);
 
 /**
  * @swagger
@@ -327,7 +328,7 @@ router.patch('/:id/status', auth, controller.updateStatus);
  *       401:
  *         description: Unauthorized
  */
-router.post('/:id/send', auth, controller.send);
+router.post('/:id/send', auth, authorize('admin', 'manager'), controller.send);
 
 /**
  * @swagger
@@ -365,7 +366,7 @@ router.post('/:id/send', auth, controller.send);
  *       401:
  *         description: Unauthorized
  */
-router.post('/:id/payment', auth, controller.recordPayment);
+router.post('/:id/payment', auth, authorize('admin', 'manager'), controller.recordPayment);
 
 /**
  * @swagger
@@ -423,7 +424,7 @@ router.post('/:id/payment', auth, controller.recordPayment);
  *         description: Unauthorized
  */
 router.get('/:id/items', auth, controller.getLineItems);
-router.post('/:id/items', auth, controller.addLineItem);
+router.post('/:id/items', auth, authorize('admin', 'manager'), controller.addLineItem);
 
 /**
  * @swagger
@@ -474,7 +475,7 @@ router.post('/:id/items', auth, controller.addLineItem);
  *       401:
  *         description: Unauthorized
  */
-router.put('/items/:lineItemId', auth, controller.updateLineItem);
-router.delete('/items/:lineItemId', auth, controller.deleteLineItem);
+router.put('/items/:lineItemId', auth, authorize('admin', 'manager'), controller.updateLineItem);
+router.delete('/items/:lineItemId', auth, authorize('admin'), controller.deleteLineItem);
 
 module.exports = router;

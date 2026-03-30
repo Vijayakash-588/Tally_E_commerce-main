@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/sales.controller');
 const auth = require('../../../middlewares/auth');
+const { authorize } = auth;
 
 /**
  * @swagger
@@ -82,7 +83,7 @@ router.get('/:id/sales', controller.getCustomerWithSales);
  *       201:
  *         description: Customer created
  */
-router.post('/', auth, controller.createCustomer);
+router.post('/', auth, authorize('admin', 'manager'), controller.createCustomer);
 
 /**
  * @swagger
@@ -106,7 +107,7 @@ router.post('/', auth, controller.createCustomer);
  *       200:
  *         description: Customer updated
  */
-router.put('/:id', auth, controller.updateCustomer);
+router.put('/:id', auth, authorize('admin', 'manager'), controller.updateCustomer);
 
 /**
  * @swagger
@@ -124,6 +125,6 @@ router.put('/:id', auth, controller.updateCustomer);
  *       200:
  *         description: Customer deleted
  */
-router.delete('/:id', auth, controller.deleteCustomer);
+router.delete('/:id', auth, authorize('admin'), controller.deleteCustomer);
 
 module.exports = router;

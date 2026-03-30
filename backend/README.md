@@ -27,6 +27,10 @@ DATABASE_URL=postgresql://user:password@localhost:5432/Inventory
 JWT_SECRET=your_jwt_secret_here
 JWT_EXPIRE=7d
 
+# Optional role self-registration keys (required for register-as manager/admin)
+MANAGER_REGISTRATION_KEY=your_manager_registration_key
+ADMIN_REGISTRATION_KEY=your_admin_registration_key
+
 # Server
 PORT=5000
 NODE_ENV=development

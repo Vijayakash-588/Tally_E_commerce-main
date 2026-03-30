@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/product.controller');
 const auth = require('../../../middlewares/auth');
+const { authorize } = auth;
 
 /**
  * @swagger
@@ -120,7 +121,7 @@ router.get('/barcode/:barcode', controller.findByBarcode);
  *       201:
  *         description: Product created
  */
-router.post('/', auth, controller.create);
+router.post('/', auth, authorize('admin', 'manager'), controller.create);
 
 /**
  * @swagger
@@ -144,7 +145,7 @@ router.post('/', auth, controller.create);
  *       200:
  *         description: Product updated
  */
-router.put('/:id', auth, controller.update);
+router.put('/:id', auth, authorize('admin', 'manager'), controller.update);
 
 /**
  * @swagger
@@ -162,7 +163,7 @@ router.put('/:id', auth, controller.update);
  *       200:
  *         description: Status toggled
  */
-router.patch('/:id/toggle', auth, controller.toggleStatus);
+router.patch('/:id/toggle', auth, authorize('admin', 'manager'), controller.toggleStatus);
 
 /**
  * @swagger
@@ -180,6 +181,6 @@ router.patch('/:id/toggle', auth, controller.toggleStatus);
  *       200:
  *         description: Product deleted
  */
-router.delete('/:id', auth, controller.remove);
+router.delete('/:id', auth, authorize('admin'), controller.remove);
 
 module.exports = router;

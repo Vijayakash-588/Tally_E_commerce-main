@@ -6,17 +6,23 @@ import { Eye, EyeOff, Layout } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Register = () => {
-    const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+    const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm({
+        defaultValues: {
+            role: 'user'
+        }
+    });
     const { registerUser } = useAuth();
     const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
+    const selectedRole = watch('role');
 
     const onSubmit = async (data) => {
         const payload = {
             name: data.name,
             email: data.email,
             password: data.password,
-            role: 'user'
+            role: data.role,
+            registrationKey: data.registrationKey || undefined
         };
 
         const result = await registerUser(payload);
@@ -116,6 +122,34 @@ const Register = () => {
                                 </div>
                                 {errors.password && <p className="text-red-500 text-xs mt-1 font-medium">{errors.password.message}</p>}
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-white mb-1">Register As</label>
+                                <select
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    {...register("role", { required: "Role is required" })}
+                                >
+                                    <option value="user">User</option>
+                                    <option value="manager">Manager</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                                {errors.role && <p className="text-red-500 text-xs mt-1 font-medium">{errors.role.message}</p>}
+                            </div>
+
+                            {(selectedRole === 'manager' || selectedRole === 'admin') && (
+                                <div>
+                                    <label className="block text-sm font-bold text-white mb-1">Registration Key</label>
+                                    <input
+                                        type="password"
+                                        placeholder={`Enter ${selectedRole} registration key`}
+                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-black focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        {...register("registrationKey", {
+                                            required: `${selectedRole} registration key is required`
+                                        })}
+                                    />
+                                    {errors.registrationKey && <p className="text-red-500 text-xs mt-1 font-medium">{errors.registrationKey.message}</p>}
+                                </div>
+                            )}
 
                             <button
                                 type="submit"

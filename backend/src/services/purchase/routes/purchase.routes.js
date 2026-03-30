@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/purchase.controller');
 const auth = require('../../../middlewares/auth');
+const { authorize } = auth;
 
 /**
  * @swagger
@@ -117,7 +118,7 @@ router.get('/:id', controller.findPurchaseById);
  *       201:
  *         description: Purchase created
  */
-router.post('/', auth, controller.createPurchase);
+router.post('/', auth, authorize('admin', 'manager'), controller.createPurchase);
 
 /**
  * @swagger
@@ -141,7 +142,7 @@ router.post('/', auth, controller.createPurchase);
  *       200:
  *         description: Purchase updated
  */
-router.put('/:id', auth, controller.updatePurchase);
+router.put('/:id', auth, authorize('admin', 'manager'), controller.updatePurchase);
 
 /**
  * @swagger
@@ -159,7 +160,7 @@ router.put('/:id', auth, controller.updatePurchase);
  *       200:
  *         description: Purchase deleted
  */
-router.delete('/:id', auth, controller.deletePurchase);
+router.delete('/:id', auth, authorize('admin'), controller.deletePurchase);
 
 
 module.exports = router;

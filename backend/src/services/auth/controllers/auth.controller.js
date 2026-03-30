@@ -7,7 +7,8 @@ const jwt = require('jsonwebtoken');
  */
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, role = 'user' } = req.body;
+    const { name, email, password, role = 'user', registrationKey } = req.body;
+    const normalizedRole = String(role || 'user').toLowerCase();
     
     if (!email || !password || !name) {
       return res.status(400).json({ 
@@ -16,7 +17,33 @@ exports.register = async (req, res, next) => {
       });
     }
 
-    const roleRecord = await prisma.roles.findUnique({ where: { name: role } });
+    const allowedSelfRegisterRoles = ['user', 'viewer', 'manager', 'admin'];
+    if (!allowedSelfRegisterRoles.includes(normalizedRole)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role'
+      });
+    }
+
+    if (normalizedRole === 'admin') {
+      if (!process.env.ADMIN_REGISTRATION_KEY || registrationKey !== process.env.ADMIN_REGISTRATION_KEY) {
+        return res.status(403).json({
+          success: false,
+          message: 'Invalid admin registration key'
+        });
+      }
+    }
+
+    if (normalizedRole === 'manager') {
+      if (!process.env.MANAGER_REGISTRATION_KEY || registrationKey !== process.env.MANAGER_REGISTRATION_KEY) {
+        return res.status(403).json({
+          success: false,
+          message: 'Invalid manager registration key'
+        });
+      }
+    }
+
+    const roleRecord = await prisma.roles.findUnique({ where: { name: normalizedRole } });
     if (!roleRecord) {
       return res.status(400).json({ 
         success: false, 
@@ -49,7 +76,8 @@ exports.register = async (req, res, next) => {
       user: { 
         id: user.id, 
         email: user.email, 
-        name: user.name 
+        name: user.name,
+        role: normalizedRole
       } 
     });
   } catch (err) {
@@ -75,7 +103,14 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    const user = await prisma.users.findUnique({ where: { email } });
+    const user = await prisma.users.findUnique({
+      where: { email },
+      include: {
+        roles: {
+          select: { name: true }
+        }
+      }
+    });
     if (!user) {
       return res.status(401).json({ 
         success: false, 
@@ -99,7 +134,7 @@ exports.login = async (req, res, next) => {
     }
 
     const token = jwt.sign(
-      { sub: user.id, email: user.email },
+      { sub: user.id, id: user.id, email: user.email, role: user.roles?.name || 'user' },
       process.env.JWT_SECRET,
       { expiresIn: '12h' }
     );
@@ -110,7 +145,8 @@ exports.login = async (req, res, next) => {
       user: { 
         id: user.id, 
         email: user.email, 
-        name: user.name 
+        name: user.name,
+        role: user.roles?.name || 'user'
       } 
     });
   } catch (err) {
@@ -125,7 +161,15 @@ exports.getCurrentUser = async (req, res, next) => {
   try {
     const user = await prisma.users.findUnique({
       where: { id: req.user.id },
-      select: { id: true, name: true, email: true, role_id: true }
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role_id: true,
+        roles: {
+          select: { name: true }
+        }
+      }
     });
     
     if (!user) {
@@ -135,7 +179,16 @@ exports.getCurrentUser = async (req, res, next) => {
       });
     }
 
-    res.json({ success: true, user });
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role_id: user.role_id,
+        role: user.roles?.name || 'user'
+      }
+    });
   } catch (err) {
     next(err);
   }

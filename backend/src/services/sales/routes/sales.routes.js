@@ -3,6 +3,7 @@ const router = express.Router();
 const controller = require('../controllers/sales.controller');
 const dashboardController = require('../controllers/dashboard.controller');
 const auth = require('../../../middlewares/auth');
+const { authorize } = auth;
 
 /**
  * @swagger
@@ -131,7 +132,7 @@ router.get('/:id', controller.findSaleById);
  *       201:
  *         description: Sale created
  */
-router.post('/', auth, controller.createSale);
+router.post('/', auth, authorize('admin', 'manager'), controller.createSale);
 
 /**
  * @swagger
@@ -155,7 +156,7 @@ router.post('/', auth, controller.createSale);
  *       200:
  *         description: Sale updated
  */
-router.put('/:id', auth, controller.updateSale);
+router.put('/:id', auth, authorize('admin', 'manager'), controller.updateSale);
 
 /**
  * @swagger
@@ -173,7 +174,7 @@ router.put('/:id', auth, controller.updateSale);
  *       200:
  *         description: Sale deleted
  */
-router.delete('/:id', auth, controller.deleteSale);
+router.delete('/:id', auth, authorize('admin'), controller.deleteSale);
 
 // CUSTOMER ROUTES MOVED TO customer.routes.js
 

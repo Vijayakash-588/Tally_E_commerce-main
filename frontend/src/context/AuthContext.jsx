@@ -14,7 +14,26 @@ export const AuthProvider = ({ children }) => {
 
         if (storedUser && token) {
             setUser(JSON.parse(storedUser));
+
+            // Refresh user from API so role/claims always stay in sync.
+            api.get('/auth/me')
+                .then((response) => {
+                    const freshUser = response.data?.user;
+                    if (freshUser) {
+                        localStorage.setItem('user', JSON.stringify(freshUser));
+                        setUser(freshUser);
+                    }
+                })
+                .catch(() => {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    setUser(null);
+                })
+                .finally(() => setLoading(false));
+
+            return;
         }
+
         setLoading(false);
     }, []);
 
@@ -62,6 +81,11 @@ export const AuthProvider = ({ children }) => {
         registerUser,
         logout,
         isAuthenticated: !!user,
+        hasRole: (roles) => {
+            if (!user?.role) return false;
+            if (Array.isArray(roles)) return roles.includes(user.role);
+            return user.role === roles;
+        }
     };
 
     return (

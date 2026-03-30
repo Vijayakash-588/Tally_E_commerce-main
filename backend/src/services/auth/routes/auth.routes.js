@@ -27,7 +27,8 @@ const auth = require('../../../middlewares/auth');
  *               name: { type: string }
  *               email: { type: string, format: email }
  *               password: { type: string, minLength: 6 }
- *               role: { type: string, default: user }
+ *               role: { type: string, enum: [user, manager, admin], default: user }
+ *               registrationKey: { type: string, description: Required for manager/admin registration }
  *     responses:
  *       201:
  *         description: User registered successfully

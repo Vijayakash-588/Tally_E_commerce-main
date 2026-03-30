@@ -35,20 +35,23 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route element={<DashboardLayout />}>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/products" element={<Products />} />
                 <Route path="/sales" element={<Sales />} />
-                <Route path="/sales-invoices" element={<SalesInvoice />} />
-                <Route path="/purchases" element={<Purchases />} />
                 <Route path="/customers" element={<Customers />} />
-                <Route path="/suppliers" element={<Suppliers />} />
-                <Route path="/banking" element={<Banking />} />
-                <Route path="/invoices" element={<Invoices />} />
                 <Route path="/stock-movements" element={<StockMovements />} />
                 <Route path="/reports/profit-loss" element={<ProfitLoss />} />
                 <Route path="/inventory" element={<StockSummary />} />
                 <Route path="/active-stock" element={<StockSummary />} />
                 <Route path="/ai-chat" element={<AIChatbot />} />
                 <Route path="/stock-levels" element={<StockLevels />} />
+
+                <Route element={<ProtectedRoute allowedRoles={['admin', 'manager']} />}>
+                  <Route path="/products" element={<Products />} />
+                  <Route path="/sales-invoices" element={<SalesInvoice />} />
+                  <Route path="/purchases" element={<Purchases />} />
+                  <Route path="/suppliers" element={<Suppliers />} />
+                  <Route path="/banking" element={<Banking />} />
+                  <Route path="/invoices" element={<Invoices />} />
+                </Route>
               </Route>
             </Route>
 

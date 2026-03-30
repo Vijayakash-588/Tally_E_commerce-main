@@ -27,10 +27,19 @@ const STATUS_CONFIG = {
 };
 const fmt = (n) => Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
+const toArray = (value) => {
+    if (Array.isArray(value)) return value;
+    if (Array.isArray(value?.data)) return value.data;
+    if (Array.isArray(value?.rows)) return value.rows;
+    return [];
+};
+
 // ── Create Invoice Modal ──────────────────────────────────────────────────────
 
 const InvoiceFormModal = ({ onClose, customers, products }) => {
     const queryClient = useQueryClient();
+    const customerOptions = toArray(customers);
+    const productOptions = toArray(products);
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
         defaultValues: {
             issue_date: new Date().toISOString().split('T')[0],
@@ -49,7 +58,7 @@ const InvoiceFormModal = ({ onClose, customers, products }) => {
             if (idx === i) {
                 const updatedRow = { ...row, [field]: value };
                 if (field === 'product_id') {
-                    const prod = products.find(p => p.id === value);
+                    const prod = productOptions.find(p => p.id === value);
                     if (prod) updatedRow.unit_price = prod.price || 0;
                 }
                 return updatedRow;
@@ -114,7 +123,7 @@ const InvoiceFormModal = ({ onClose, customers, products }) => {
                                 className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none font-bold text-slate-900 appearance-none"
                             >
                                 <option value="">Select customer…</option>
-                                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                {customerOptions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                             {errors.customer_id && <p className="text-red-500 text-xs font-bold mt-1">{errors.customer_id.message}</p>}
                         </div>
@@ -149,7 +158,7 @@ const InvoiceFormModal = ({ onClose, customers, products }) => {
                                             className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-slate-900 text-sm appearance-none outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400"
                                         >
                                             <option value="">Choose product…</option>
-                                            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                            {productOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                         </select>
                                         <input
                                             type="number" min="1" placeholder="Qty"
@@ -590,15 +599,18 @@ autoTable(doc, {
     // In a real app, we'd have a separate 'export' endpoint.
     const paginatedData = invoices;
 
-    const { data: customers = [] } = useQuery({
+    const { data: customersResponse = [] } = useQuery({
         queryKey: ['customers'],
         queryFn: getCustomers,
     });
 
-    const { data: products = [] } = useQuery({
+    const { data: productsResponse = [] } = useQuery({
         queryKey: ['products'],
         queryFn: getProducts,
     });
+
+    const customers = toArray(customersResponse);
+    const products = toArray(productsResponse);
 
     // We use server-side filtering & pagination now
     const filtered = invoices;

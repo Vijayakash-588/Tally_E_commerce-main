@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/inventory.controller');
 const auth = require('../../../middlewares/auth');
+const { authorize } = auth;
 
 /**
  * @swagger
@@ -143,7 +144,7 @@ router.get('/:id', controller.findById);
  *       201:
  *         description: Stock movement recorded
  */
-router.post('/', auth, controller.create);
+router.post('/', auth, authorize('admin', 'manager'), controller.create);
 
 /**
  * @swagger
@@ -167,7 +168,7 @@ router.post('/', auth, controller.create);
  *       200:
  *         description: Stock movement updated
  */
-router.put('/:id', auth, controller.update);
+router.put('/:id', auth, authorize('admin', 'manager'), controller.update);
 
 /**
  * @swagger
@@ -185,6 +186,6 @@ router.put('/:id', auth, controller.update);
  *       200:
  *         description: Stock movement deleted
  */
-router.delete('/:id', auth, controller.remove);
+router.delete('/:id', auth, authorize('admin'), controller.remove);
 
 module.exports = router;

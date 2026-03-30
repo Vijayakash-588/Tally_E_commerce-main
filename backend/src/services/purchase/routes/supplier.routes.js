@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/purchase.controller');
 const auth = require('../../../middlewares/auth');
+const { authorize } = auth;
 
 /**
  * @swagger
@@ -85,7 +86,7 @@ router.get('/:id/purchases', controller.getSupplierWithPurchases);
  *       201:
  *         description: Supplier created
  */
-router.post('/', auth, controller.createSupplier);
+router.post('/', auth, authorize('admin', 'manager'), controller.createSupplier);
 
 /**
  * @swagger
@@ -109,7 +110,7 @@ router.post('/', auth, controller.createSupplier);
  *       200:
  *         description: Supplier updated
  */
-router.put('/:id', auth, controller.updateSupplier);
+router.put('/:id', auth, authorize('admin', 'manager'), controller.updateSupplier);
 
 /**
  * @swagger
@@ -127,6 +128,6 @@ router.put('/:id', auth, controller.updateSupplier);
  *       200:
  *         description: Supplier deleted
  */
-router.delete('/:id', auth, controller.deleteSupplier);
+router.delete('/:id', auth, authorize('admin'), controller.deleteSupplier);
 
 module.exports = router;
