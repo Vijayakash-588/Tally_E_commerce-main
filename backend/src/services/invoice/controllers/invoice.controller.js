@@ -1,5 +1,4 @@
 const service = require('../services/invoice.service');
-const prisma = require('../../../prisma');
 
 /**
  * Create new invoice

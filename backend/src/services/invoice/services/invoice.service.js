@@ -66,7 +66,7 @@ exports.createInvoice = async (data) => {
           const tr = await prisma.tax_rates.findUnique({ where: { id: it.tax_rate_id } });
           const pct = tr ? Number(tr.rate) : 0;
           taxAmount = +(base * (pct / 100));
-        } catch (e) {
+        } catch {
           taxAmount = 0;
         }
       }
@@ -86,7 +86,6 @@ exports.createInvoice = async (data) => {
 
     const itemsTotal = lineItemsCreate.reduce((s, li) => s + Number(li.amount || 0), 0);
     totalAmount = itemsTotal - (Number(data.discount) || 0) + (Number(data.round_off) || 0);
-    totalTax = totalTax;
   }
 
   // Use a transaction to ensure invoice and stock movements succeed
@@ -426,7 +425,7 @@ exports.addLineItem = async (invoiceId, lineItemData) => {
       const tr = await prisma.tax_rates.findUnique({ where: { id: lineItemData.tax_rate_id } });
       const pct = tr ? Number(tr.rate) : 0;
       taxAmount = +(base * (pct / 100));
-    } catch (e) {
+    } catch {
       taxAmount = 0;
     }
   }

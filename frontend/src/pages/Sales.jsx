@@ -315,8 +315,8 @@ const Sales = () => {
     const [selectedSale, setSelectedSale] = useState(null);
     const queryClient = useQueryClient();
     const [currentPage, setCurrentPage] = useState(1);
-        const rowsPerPage = 5;
-        const [statusFilter,setStatusFilter] = useState("all");
+    const rowsPerPage = 5;
+    const statusFilter = 'all';
 
     // Fetch Invoices instead of Sales, with pagination
     const { data: response = {}, isLoading, isFetching } = useQuery({

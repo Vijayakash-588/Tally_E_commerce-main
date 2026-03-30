@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 /**
  * User Registration
  */
-exports.register = async (req, res, next) => {
+exports.register = async (req, res) => {
   try {
     const { name, email, password, role = 'user', registrationKey } = req.body;
     const normalizedRole = String(role || 'user').toLowerCase();

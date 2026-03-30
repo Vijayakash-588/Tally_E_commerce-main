@@ -134,7 +134,7 @@ const Customers = () => {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const rowsPerPage = 5; 
-    const [statusFilter,setStatusFilter] = useState("all");
+    const statusFilter = 'all';
 
     // Query updated to include pagination & search params
     const { data: response = {}, isLoading, isFetching } = useQuery({

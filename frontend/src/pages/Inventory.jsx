@@ -18,7 +18,6 @@ import {
     ChevronRight,
     SearchX
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
@@ -209,11 +208,11 @@ const ProductModal = ({ isOpen, onClose, onSuccess }) => {
     );
 };
 
-const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass, sparkColor }) => (
+const StatCard = ({ title, amount, change, changeType, icon: CardIcon, colorClass }) => (
     <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group">
         <div className="flex justify-between items-start">
             <div className={clsx("p-4 rounded-2xl bg-opacity-10 group-hover:scale-110 transition-transform duration-500", colorClass)}>
-                <Icon className={clsx("w-6 h-6", colorClass.replace('bg-', 'text-'))} />
+                <CardIcon className={clsx("w-6 h-6", colorClass.replace('bg-', 'text-'))} />
             </div>
         </div>
         <div className="mt-6">
@@ -231,7 +230,6 @@ const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass, s
 );
 
 const Inventory = () => {
-    const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState(1);
     const rowsPerPage = 10;
     const { searchTerm, setSearchTerm } = useSearch();

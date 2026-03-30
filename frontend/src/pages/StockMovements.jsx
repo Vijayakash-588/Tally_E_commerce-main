@@ -11,7 +11,6 @@ const StockMovements = () => {
     const { searchTerm, setSearchTerm } = useSearch();
     const [filterType, setFilterType] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
-     const [statusFilter, setStatusFilter] = useState('all');
     const rowsPerPage = 5;
 
     // Query updated to include pagination & search params

@@ -200,7 +200,7 @@ const Products = () => {
     const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState(1);
     const rowsPerPage = 5;
-    const [statusFilter, setStatusFilter] = useState('all');
+    const statusFilter = 'all';
 
     // Query updated to include pagination & search params
     const { data: response = {}, isLoading, isFetching } = useQuery({
@@ -220,14 +220,14 @@ const Products = () => {
             queryClient.invalidateQueries(['products']);
             toast.success('Product deleted');
         },
-        onError: (err) => {
+        onError: () => {
             toast.error('Failed to delete product');
         }
     });
 
     const toggleMutation = useMutation({
         mutationFn: toggleProductStatus,
-        onSuccess: (data) => {
+        onSuccess: () => {
             queryClient.invalidateQueries(['products']);
             toast.success(`Product status updated`);
         },

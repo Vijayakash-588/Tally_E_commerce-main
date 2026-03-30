@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Plus,
@@ -15,7 +15,6 @@ import {
     History,
     Package
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api/axios';
 import clsx from 'clsx';
@@ -48,11 +47,11 @@ const Sparkline = ({ color }) => (
     </div>
 );
 
-const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass, sparkColor }) => (
+const StatCard = ({ title, amount, change, changeType, icon: CardIcon, colorClass, sparkColor }) => (
     <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group">
         <div className="flex justify-between items-start">
             <div className={clsx("p-4 rounded-2xl bg-opacity-10 group-hover:scale-110 transition-transform duration-500", colorClass)}>
-                <Icon className={clsx("w-6 h-6", colorClass.replace('bg-', 'text-'))} />
+                <CardIcon className={clsx("w-6 h-6", colorClass.replace('bg-', 'text-'))} />
             </div>
             <Sparkline color={sparkColor} />
         </div>
@@ -71,7 +70,6 @@ const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass, s
 );
 
 const Purchases = () => {
-    const navigate = useNavigate();
     const { searchTerm, setSearchTerm } = useSearch();
     const [currentPage, setCurrentPage] = useState(1);
     const rowsPerPage = 5;
@@ -119,7 +117,7 @@ const Purchases = () => {
         }
     });
 
-    const { data: response = {}, isLoading, isFetching } = useQuery({
+    const { data: response = {}, isLoading } = useQuery({
         queryKey: ['purchases', currentPage, searchTerm],
         queryFn: async () => {
             const res = await api.get('/purchases', {
@@ -146,7 +144,9 @@ const Purchases = () => {
         keepPreviousData: true
     });
 
-    const purchasesList = Array.isArray(response) ? response : (response.data || []);
+    const purchasesList = useMemo(() => (
+        Array.isArray(response) ? response : (response.data || [])
+    ), [response]);
     const totalRecords = response.total || purchasesList.length;
     const totalPages = response.totalPages || Math.ceil(purchasesList.length / rowsPerPage) || 1;
 
@@ -160,28 +160,6 @@ const Purchases = () => {
             setPurchases(purchasesList);
         }
     }, [purchasesList]);
-
-    const calculateTotal = (items, discount = 0, tax = 0, roundOff = 0) => {
-        const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        // Backend now handles tax per item if we send tax_amount, but here we want a simple view.
-        // Tally style: Subtotal - Discount + Tax + RoundOff = Total
-        // If items have individual tax, we sum it up.
-
-        let totalTax = 0;
-        items.forEach(item => {
-            const taxRate = taxRates.find(t => t.id === item.tax_rate_id);
-            if (taxRate) {
-                totalTax += (item.price * item.quantity * taxRate.rate / 100);
-            }
-        });
-
-        // Override or add to totalTax? 
-        // For Tally simplicity, let's treat the 'Tax' field in formData as an "Additional Tax/Charge" or just display the calculated tax.
-        // Actually, Tally usually calculates tax from items. Let's stick to that.
-        // But we added a 'tax' field to the Purchase model as a summary.
-
-        return subtotal - parseFloat(discount || 0) + totalTax + parseFloat(roundOff || 0);
-    };
 
     const createMutation = useMutation({
         mutationFn: (data) => api.post('/purchases', data),
@@ -300,15 +278,6 @@ const Purchases = () => {
             console.error(error);
             toast.error('Failed to record some purchases');
         }
-    };
-
-    const handleEdit = (purchase) => {
-        setEditingPurchase(purchase);
-        setFormData({
-            supplier_id: purchase.supplier_id || ''
-        });
-        setItems(purchase.items || []);
-        setIsModalOpen(true);
     };
 
     const handleDelete = (id) => {
@@ -594,7 +563,7 @@ const Purchases = () => {
                                                     } else {
                                                         toast.error('Product not found');
                                                     }
-                                                } catch (err) {
+                                                } catch {
                                                     toast.error('Product not found');
                                                 }
                                             }

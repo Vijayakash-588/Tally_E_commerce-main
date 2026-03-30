@@ -256,7 +256,7 @@ const StockLevels = () => {
     );
 };
 
-const StatCard = ({ label, value, icon: Icon, color }) => {
+const StatCard = ({ label, value, icon: CardIcon, color }) => {
     const colors = {
         blue: 'bg-blue-50 text-blue-600',
         amber: 'bg-amber-50 text-amber-600',
@@ -271,7 +271,7 @@ const StatCard = ({ label, value, icon: Icon, color }) => {
                     <p className="text-3xl font-black mt-2 tracking-tight text-slate-900">{value}</p>
                 </div>
                 <div className={clsx('p-4 rounded-2xl group-hover:scale-110 transition-transform duration-500', colors[color])}>
-                    <Icon className="w-6 h-6" />
+                    <CardIcon className="w-6 h-6" />
                 </div>
             </div>
         </div>

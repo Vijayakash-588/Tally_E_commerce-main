@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSearch } from '../context/SearchContext';
 import {
@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 
-const SidebarItem = ({ to, icon: Icon, children, active }) => {
+const SidebarItem = ({ to, icon: NavIcon, children }) => {
     return (
         <NavLink
             to={to}
@@ -43,7 +43,7 @@ const SidebarItem = ({ to, icon: Icon, children, active }) => {
             }
         >
             <div className="flex items-center">
-                <Icon className={clsx("w-5 h-5 mr-3 transition-colors", active ? "text-white" : "group-hover:text-blue-600")} />
+                <NavIcon className={clsx("w-5 h-5 mr-3 transition-colors group-hover:text-blue-600")} />
                 {children}
             </div>
             <ChevronRight className={clsx("w-4 h-4 opacity-0 group-hover:opacity-100 transition-all transform translate-x-1 group-hover:translate-x-0")} />
@@ -54,7 +54,6 @@ const SidebarItem = ({ to, icon: Icon, children, active }) => {
 const DashboardLayout = () => {
     const { logout, user, hasRole } = useAuth();
     const { searchTerm, setSearchTerm } = useSearch();
-    const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     // Keyboard shortcut for search

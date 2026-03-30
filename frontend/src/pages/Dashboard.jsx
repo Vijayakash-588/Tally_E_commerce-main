@@ -21,8 +21,6 @@ import {
     RefreshCcw
 } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import api from '../api/axios';
-import toast from 'react-hot-toast';
 import clsx from 'clsx';
 import { useQuery } from '@tanstack/react-query';
 import { getDashboardSummary } from '../api/sales';
@@ -61,11 +59,11 @@ const Sparkline = ({ color }) => (
     </div>
 );
 
-const StatCard = ({ title, amount, change, changeType, icon: Icon, colorClass, sparkColor }) => (
+const StatCard = ({ title, amount, change, changeType, icon: CardIcon, colorClass, sparkColor }) => (
     <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group">
         <div className="flex justify-between items-start">
             <div className={`p-4 rounded-2xl ${colorClass} bg-opacity-10 group-hover:scale-110 transition-transform duration-500`}>
-                <Icon className={`w-6 h-6 ${colorClass.replace('bg-', 'text-')}`} />
+                <CardIcon className={`w-6 h-6 ${colorClass.replace('bg-', 'text-')}`} />
             </div>
             <Sparkline color={sparkColor} />
         </div>
@@ -141,7 +139,9 @@ const Dashboard = () => {
         monthlyPurchases: 0
     };
 
-    const recentTransactions = dashboardData?.recentTransactions || [];
+    const recentTransactions = useMemo(() => (
+        dashboardData?.recentTransactions || []
+    ), [dashboardData]);
 
     const filteredTransactions = useMemo(() => {
         if (!searchTerm) return recentTransactions;

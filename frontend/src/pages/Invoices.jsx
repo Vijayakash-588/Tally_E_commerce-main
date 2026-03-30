@@ -426,7 +426,7 @@ const InvoiceDetailModal = ({ invoice, onClose }) => {
                             {[
                                 { key: 'details', label: 'Details', icon: FileText },
                                 { key: 'items', label: 'Line Items', icon: List },
-                            ].map(({ key, label, icon: Icon }) => (
+                            ].map(({ key, label, icon: TabIcon }) => (
                                 <button
                                     key={key}
                                     onClick={() => setActiveTab(key)}
@@ -437,7 +437,7 @@ const InvoiceDetailModal = ({ invoice, onClose }) => {
                                             : 'border-transparent text-slate-400 hover:text-slate-900'
                                     )}
                                 >
-                                    <Icon className="w-3.5 h-3.5" />
+                                    <TabIcon className="w-3.5 h-3.5" />
                                     {label}
                                 </button>
                             ))}
@@ -513,7 +513,6 @@ const Invoices = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const rowsPerPage = 5; // Number of invoices to show per page
     const { searchTerm, setSearchTerm } = useSearch();
-    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -664,7 +663,7 @@ autoTable(doc, {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {statCards.map(({ label, value, Icon, color, iconColor }) => (
+                {statCards.map(({ label, value, Icon: CardIcon, color, iconColor }) => (
                     <div key={label} className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group">
                         <div className="flex items-center justify-between">
                             <div>
@@ -672,7 +671,7 @@ autoTable(doc, {
                                 <p className={clsx('text-3xl font-black mt-2 tracking-tight', iconColor)}>{value}</p>
                             </div>
                             <div className={clsx('p-4 rounded-2xl group-hover:scale-110 transition-transform duration-500', color)}>
-                                <Icon className={clsx('w-6 h-6', iconColor)} />
+                                <CardIcon className={clsx('w-6 h-6', iconColor)} />
                             </div>
                         </div>
                     </div>

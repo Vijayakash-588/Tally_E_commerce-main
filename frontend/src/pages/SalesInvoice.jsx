@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     Plus,
@@ -20,10 +20,8 @@ import {
     Send,
     Trash
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api/axios';
-import clsx from 'clsx';
 import { useSearch } from '../context/SearchContext';
 
 const InvoiceModal = ({ isOpen, onClose, invoice }) => {
@@ -250,7 +248,7 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
                                             } else {
                                                 toast.error('Product not found');
                                             }
-                                        } catch (err) {
+                                        } catch {
                                             toast.error('Product not found');
                                         }
                                     }
@@ -463,7 +461,6 @@ const InvoiceModal = ({ isOpen, onClose, invoice }) => {
 };
 
 const SalesInvoice = () => {
-    const navigate = useNavigate();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState(null);
     const { searchTerm, setSearchTerm } = useSearch();
