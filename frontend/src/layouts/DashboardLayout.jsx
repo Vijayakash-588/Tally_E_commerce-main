@@ -119,8 +119,10 @@ const DashboardLayout = () => {
                             { title: "Products", sub: "Product Catalog", icon: ShoppingBag, color: "bg-rose-600", to: "/products", roles: ['admin', 'manager'] },
                             { title: "Stock Movements", sub: "Track Movement", icon: TrendingUp, color: "bg-teal-600", to: "/stock-movements" },
                             { title: "Stock Levels", sub: "Live Stock View", icon: BarChart3, color: "bg-orange-600", to: "/stock-levels" },
+                            { title: "Demand Forecast", sub: "Reorder Intelligence", icon: TrendingUp, color: "bg-sky-600", to: "/forecasting" },
                             { title: "Customers", sub: "Manage Customers", icon: Users, color: "bg-green-600", to: "/customers" },
                             { title: "Suppliers", sub: "Manage Suppliers", icon: Truck, color: "bg-purple-600", to: "/suppliers", roles: ['admin', 'manager'] },
+                            { title: "Approvals", sub: "Maker-Checker", icon: Settings, color: "bg-slate-700", to: "/approvals", roles: ['admin', 'manager'] },
                             { title: "AI Assistant", sub: "Chat with AI", icon: Bot, color: "bg-gradient-to-br from-blue-600 to-violet-600", to: "/ai-chat" },
                         ].filter((item) => !item.roles || hasRole(item.roles)).map((item, idx) => {
                             const NavIcon = item.icon;

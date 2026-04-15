@@ -1,8 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/inventory.controller');
+const forecastController = require('../controllers/forecast.controller');
 const auth = require('../../../middlewares/auth');
 const { authorize } = auth;
+const { createAuditLogger } = require('../../../middlewares/audit.middleware');
+const { requireApprovalIfCritical } = require('../../../middlewares/approval.guard');
 
 /**
  * @swagger
@@ -86,6 +89,54 @@ router.get('/summary', controller.getSummary);
 
 /**
  * @swagger
+ * /api/inventory/forecast/analytics:
+ *   get:
+ *     summary: Get forecast with analytics dashboard
+ *     tags: [Inventory]
+ *     responses:
+ *       200:
+ *         description: Forecast data with analytics
+ */
+router.get('/forecast/analytics', auth, authorize('admin', 'manager'), forecastController.getForecastWithAnalytics);
+
+/**
+ * @swagger
+ * /api/inventory/forecast/export:
+ *   get:
+ *     summary: Export forecast to CSV
+ *     tags: [Inventory]
+ *     responses:
+ *       200:
+ *         description: CSV file
+ */
+router.get('/forecast/export', auth, authorize('admin', 'manager'), forecastController.exportForecast);
+
+/**
+ * @swagger
+ * /api/inventory/forecast/purchase-orders:
+ *   post:
+ *     summary: Auto-generate purchase orders for critical items
+ *     tags: [Inventory]
+ *     responses:
+ *       201:
+ *         description: Purchase orders created
+ */
+router.post('/forecast/purchase-orders', auth, authorize('admin'), createAuditLogger('AUTO_GENERATE_PO', 'purchases'), forecastController.autoGeneratePurchaseOrders);
+
+/**
+ * @swagger
+ * /api/inventory/forecast:
+ *   get:
+ *     summary: Get demand forecast and reorder recommendations
+ *     tags: [Inventory]
+ *     responses:
+ *       200:
+ *         description: Forecast data
+ */
+router.get('/forecast', auth, authorize('admin', 'manager'), forecastController.getForecast);
+
+/**
+ * @swagger
  * /api/inventory/product/{productId}:
  *   get:
  *     summary: Get stock movements for product
@@ -144,7 +195,14 @@ router.get('/:id', controller.findById);
  *       201:
  *         description: Stock movement recorded
  */
-router.post('/', auth, authorize('admin', 'manager'), controller.create);
+router.post(
+	'/',
+	auth,
+	authorize('admin', 'manager'),
+	requireApprovalIfCritical,
+	createAuditLogger('CREATE_STOCK_MOVEMENT', 'inventory'),
+	controller.create
+);
 
 /**
  * @swagger
@@ -168,7 +226,14 @@ router.post('/', auth, authorize('admin', 'manager'), controller.create);
  *       200:
  *         description: Stock movement updated
  */
-router.put('/:id', auth, authorize('admin', 'manager'), controller.update);
+router.put(
+	'/:id',
+	auth,
+	authorize('admin', 'manager'),
+	requireApprovalIfCritical,
+	createAuditLogger('UPDATE_STOCK_MOVEMENT', 'inventory'),
+	controller.update
+);
 
 /**
  * @swagger
@@ -186,6 +251,12 @@ router.put('/:id', auth, authorize('admin', 'manager'), controller.update);
  *       200:
  *         description: Stock movement deleted
  */
-router.delete('/:id', auth, authorize('admin'), controller.remove);
+router.delete(
+	'/:id',
+	auth,
+	authorize('admin'),
+	createAuditLogger('DELETE_STOCK_MOVEMENT', 'inventory'),
+	controller.remove
+);
 
 module.exports = router;

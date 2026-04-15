@@ -21,6 +21,8 @@ import Invoices from './pages/Invoices';
 import Sales from './pages/Sales';
 import AIChatbot from './pages/AIChatbot';
 import StockLevels from './pages/StockLevels';
+import Forecasting from './pages/Forecasting';
+import Approvals from './pages/Approvals';
 
 function App() {
   return (
@@ -43,6 +45,7 @@ function App() {
                 <Route path="/active-stock" element={<StockSummary />} />
                 <Route path="/ai-chat" element={<AIChatbot />} />
                 <Route path="/stock-levels" element={<StockLevels />} />
+                <Route path="/forecasting" element={<Forecasting />} />
 
                 <Route element={<ProtectedRoute allowedRoles={['admin', 'manager']} />}>
                   <Route path="/products" element={<Products />} />
@@ -51,6 +54,7 @@ function App() {
                   <Route path="/suppliers" element={<Suppliers />} />
                   <Route path="/banking" element={<Banking />} />
                   <Route path="/invoices" element={<Invoices />} />
+                  <Route path="/approvals" element={<Approvals />} />
                 </Route>
               </Route>
             </Route>

@@ -3,6 +3,8 @@ const router = express.Router();
 const controller = require('../controllers/invoice.controller');
 const auth = require('../../../middlewares/auth');
 const { authorize } = auth;
+const { createAuditLogger } = require('../../../middlewares/audit.middleware');
+const { requireApprovalIfCritical } = require('../../../middlewares/approval.guard');
 
 /**
  * @swagger
@@ -68,7 +70,14 @@ const { authorize } = auth;
  *       401:
  *         description: Unauthorized
  */
-router.post('/', auth, authorize('admin', 'manager'), controller.create);
+router.post(
+	'/',
+	auth,
+	authorize('admin', 'manager'),
+	requireApprovalIfCritical,
+	createAuditLogger('CREATE_INVOICE', 'invoice'),
+	controller.create
+);
 router.get('/', auth, controller.findAll);
 
 /**
@@ -271,8 +280,21 @@ router.get('/range', auth, controller.getByDateRange);
  *         description: Unauthorized
  */
 router.get('/:id', auth, controller.findById);
-router.put('/:id', auth, authorize('admin', 'manager'), controller.update);
-router.delete('/:id', auth, authorize('admin'), controller.remove);
+router.put(
+	'/:id',
+	auth,
+	authorize('admin', 'manager'),
+	requireApprovalIfCritical,
+	createAuditLogger('UPDATE_INVOICE', 'invoice'),
+	controller.update
+);
+router.delete(
+	'/:id',
+	auth,
+	authorize('admin'),
+	createAuditLogger('DELETE_INVOICE', 'invoice'),
+	controller.remove
+);
 
 /**
  * @swagger
@@ -306,7 +328,13 @@ router.delete('/:id', auth, authorize('admin'), controller.remove);
  *       401:
  *         description: Unauthorized
  */
-router.patch('/:id/status', auth, authorize('admin', 'manager'), controller.updateStatus);
+router.patch(
+	'/:id/status',
+	auth,
+	authorize('admin', 'manager'),
+	createAuditLogger('UPDATE_INVOICE_STATUS', 'invoice'),
+	controller.updateStatus
+);
 
 /**
  * @swagger

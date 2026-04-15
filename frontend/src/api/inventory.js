@@ -51,3 +51,8 @@ export const getStockLevels = async (params = {}) => {
     const response = await api.get('/inventory/levels', { params });
     return response.data;
 };
+
+export const getInventoryForecast = async (params = {}) => {
+    const response = await api.get('/inventory/forecast', { params });
+    return response.data;
+};

@@ -3,6 +3,8 @@ const router = express.Router();
 const controller = require('../controllers/purchase.controller');
 const auth = require('../../../middlewares/auth');
 const { authorize } = auth;
+const { createAuditLogger } = require('../../../middlewares/audit.middleware');
+const { requireApprovalIfCritical } = require('../../../middlewares/approval.guard');
 
 /**
  * @swagger
@@ -118,7 +120,14 @@ router.get('/:id', controller.findPurchaseById);
  *       201:
  *         description: Purchase created
  */
-router.post('/', auth, authorize('admin', 'manager'), controller.createPurchase);
+router.post(
+	'/',
+	auth,
+	authorize('admin', 'manager'),
+	requireApprovalIfCritical,
+	createAuditLogger('CREATE_PURCHASE', 'purchase'),
+	controller.createPurchase
+);
 
 /**
  * @swagger
@@ -142,7 +151,14 @@ router.post('/', auth, authorize('admin', 'manager'), controller.createPurchase)
  *       200:
  *         description: Purchase updated
  */
-router.put('/:id', auth, authorize('admin', 'manager'), controller.updatePurchase);
+router.put(
+	'/:id',
+	auth,
+	authorize('admin', 'manager'),
+	requireApprovalIfCritical,
+	createAuditLogger('UPDATE_PURCHASE', 'purchase'),
+	controller.updatePurchase
+);
 
 /**
  * @swagger
@@ -160,7 +176,13 @@ router.put('/:id', auth, authorize('admin', 'manager'), controller.updatePurchas
  *       200:
  *         description: Purchase deleted
  */
-router.delete('/:id', auth, authorize('admin'), controller.deletePurchase);
+router.delete(
+	'/:id',
+	auth,
+	authorize('admin'),
+	createAuditLogger('DELETE_PURCHASE', 'purchase'),
+	controller.deletePurchase
+);
 
 
 module.exports = router;

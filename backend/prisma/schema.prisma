@@ -204,3 +204,48 @@ enum invoice_status {
   OVERDUE
   CANCELLED
 }
+
+model approval_requests {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  module      String          @db.VarChar(40)
+  action      String          @db.VarChar(80)
+  entity_type String?         @db.VarChar(40)
+  entity_id   String?         @db.Uuid
+  reason      String?
+  payload     Json?
+  status      approval_status @default(PENDING)
+  requested_by String?        @db.Uuid
+  approved_by  String?        @db.Uuid
+  review_notes String?
+  reviewed_at  DateTime?      @db.Timestamptz(6)
+  created_at   DateTime?      @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime?      @default(now()) @db.Timestamptz(6)
+
+  @@index([status], map: "idx_approval_requests_status")
+  @@index([module], map: "idx_approval_requests_module")
+  @@index([created_at], map: "idx_approval_requests_created_at")
+}
+
+model audit_logs {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String?   @db.Uuid
+  action      String    @db.VarChar(100)
+  resource    String    @db.VarChar(60)
+  resource_id String?   @db.Uuid
+  method      String    @db.VarChar(10)
+  endpoint    String    @db.VarChar(255)
+  payload     Json?
+  status_code Int?
+  latency_ms  Int?
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at], map: "idx_audit_logs_created_at")
+  @@index([action], map: "idx_audit_logs_action")
+  @@index([resource], map: "idx_audit_logs_resource")
+}
+
+enum approval_status {
+  PENDING
+  APPROVED
+  REJECTED
+}

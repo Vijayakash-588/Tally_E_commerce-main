@@ -15,6 +15,7 @@ const purchaseRoutes = require('./services/purchase/routes/purchase.routes');
 const supplierRoutes = require('./services/purchase/routes/supplier.routes');
 const invoiceRoutes = require('./services/invoice/routes/invoice.routes');
 const aiRoutes = require('./services/ai/routes/ai.routes');
+const approvalRoutes = require('./services/approval/routes/approval.routes');
 
 const app = express();
 
@@ -71,6 +72,9 @@ app.use('/api/invoices', invoiceRoutes);
 // AI Chatbot Service
 app.use('/api/ai', aiRoutes);
 
+// Approval Workflow Service
+app.use('/api/approvals', approvalRoutes);
+
 require('./swagger')(app);
 
 /**
@@ -102,7 +106,8 @@ app.get('/api/info', (req, res) => {
       { name: 'Customer Service', endpoint: '/api/customers', status: 'active' },
       { name: 'Purchase Service', endpoint: '/api/purchases', status: 'active' },
       { name: 'Supplier Service', endpoint: '/api/suppliers', status: 'active' },
-      { name: 'Invoice Service', endpoint: '/api/invoices', status: 'active' }
+      { name: 'Invoice Service', endpoint: '/api/invoices', status: 'active' },
+      { name: 'Approval Service', endpoint: '/api/approvals', status: 'active' }
     ]
   });
 });

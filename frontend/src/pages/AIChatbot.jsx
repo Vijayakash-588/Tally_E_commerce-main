@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
     Bot,
     Send,
     Sparkles,
     User,
     RefreshCw,
+    Download,
     Zap,
     TrendingUp,
     FileText,
@@ -65,6 +68,60 @@ function BubbleContent({ text }) {
     );
 }
 
+function ResponseMeta({ meta }) {
+    if (!meta) return null;
+
+    const confidence = typeof meta.confidence === 'number'
+        ? `${Math.round(meta.confidence * 100)}%`
+        : null;
+
+    const hasEvidence = Array.isArray(meta.evidence) && meta.evidence.length > 0;
+    const isDataQuery = meta.evidence && meta.evidence.length === 0 && meta.warnings && meta.warnings.some(w => w.includes('No ERP evidence'));
+
+    return (
+        <div className="mt-2 space-y-2 text-xs">
+            {confidence && (
+                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 text-blue-700 font-bold border border-blue-100">
+                    Confidence: {confidence}
+                </div>
+            )}
+
+            {Array.isArray(meta.warnings) && meta.warnings.length > 0 && (
+                <div className="p-2 rounded-lg bg-amber-50 border border-amber-100 text-amber-800">
+                    {meta.warnings.map((warning, idx) => (
+                        <p key={idx}>- {warning}</p>
+                    ))}
+                </div>
+            )}
+
+            {hasEvidence ? (
+                <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 space-y-1">
+                    <p className="font-black uppercase tracking-widest text-[10px] text-slate-500">Evidence</p>
+                    {meta.evidence.slice(0, 3).map((item, idx) => (
+                        <p key={idx}>- <strong>{item.title}:</strong> {item.details}</p>
+                    ))}
+                </div>
+            ) : isDataQuery ? (
+                <div className="p-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-800 space-y-1">
+                    <p className="font-bold">💡 No ERP data found for this query.</p>
+                    <p>Try asking about: sales summary, low stock alerts, or overdue invoices to see live data.</p>
+                    <p>Or navigate to the relevant module to add data.</p>
+                </div>
+            ) : null}
+
+            {Array.isArray(meta.actionSuggestions) && meta.actionSuggestions.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                    {meta.actionSuggestions.slice(0, 2).map((item, idx) => (
+                        <span key={idx} className="px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-700 font-semibold">
+                            {item.label}
+                        </span>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
 const TypingDots = () => (
     <div className="flex items-center gap-1.5 px-4 py-3">
         {[0, 1, 2].map(i => (
@@ -81,12 +138,18 @@ import { sendChatMessage } from '../api/ai';
 
 // ... (keep constants)
 
+const stripMarkdown = (text = '') => String(text)
+    .replace(/\*\*/g, '')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+    .replace(/^\s*[-•]\s*/gm, '')
+    .replace(/`/g, '');
+
 const AIChatbot = () => {
     const [messages, setMessages] = useState([
         {
             id: 1,
             role: 'assistant',
-            text: "Hello! 👋 I'm your ERP AI Assistant powered by **Gateway-Pro** and **MCP**.\n\nI can help you analyze sales, manage inventory, generate reports, and much more. What would you like to know today?",
+            text: "Hello! 👋 I'm your AI assistant, built to respond like ChatGPT and Copilot.\n\nI can answer general questions, help with code, explain concepts, and use your application data when it is relevant. What would you like to know today?",
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
     ]);
@@ -115,11 +178,17 @@ const AIChatbot = () => {
         setIsTyping(true);
 
         try {
-            const reply = await sendChatMessage(trimmed);
+            const aiResponse = await sendChatMessage(trimmed);
             setMessages(prev => [...prev, {
                 id: Date.now() + 1,
                 role: 'assistant',
-                text: reply,
+                text: aiResponse.reply,
+                meta: {
+                    confidence: aiResponse.confidence,
+                    evidence: aiResponse.evidence,
+                    warnings: aiResponse.warnings,
+                    actionSuggestions: aiResponse.actionSuggestions
+                },
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }]);
         } catch (error) {
@@ -127,7 +196,7 @@ const AIChatbot = () => {
             setMessages(prev => [...prev, {
                 id: Date.now() + 1,
                 role: 'assistant',
-                text: "I'm sorry, I'm having trouble connecting to the AI service. Please check if the backend is running and the Hugging Face token is configured.",
+                text: `I could not complete the AI request: ${error.message || 'Unknown error'}`,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }]);
         } finally {
@@ -150,6 +219,51 @@ const AIChatbot = () => {
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }]);
     };
+
+    const exportChatPdf = () => {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 14;
+        const contentWidth = pageWidth - margin * 2;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.text('ERP AI Chat Transcript', margin, 18);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text(`Generated: ${new Date().toLocaleString()}`, margin, 25);
+        doc.text(`Messages: ${messages.length}`, margin, 31);
+
+        const rows = messages.map((message) => ([
+            message.role === 'assistant' ? 'Assistant' : 'User',
+            message.time || '',
+            stripMarkdown(message.text || ''),
+            message.meta?.confidence !== undefined ? `${Math.round(Number(message.meta.confidence) * 100)}%` : '',
+        ]));
+
+        autoTable(doc, {
+            startY: 38,
+            head: [['Role', 'Time', 'Message', 'Confidence']],
+            body: rows,
+            theme: 'grid',
+            styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak', valign: 'top' },
+            headStyles: { fillColor: [37, 99, 235] },
+            columnStyles: {
+                0: { cellWidth: 24 },
+                1: { cellWidth: 26 },
+                2: { cellWidth: contentWidth - 24 - 26 - 24 },
+                3: { cellWidth: 24 },
+            },
+            didDrawPage: (data) => {
+                doc.setFontSize(8);
+                doc.setTextColor(100);
+                doc.text('Generated from AI Assistant', margin, doc.internal.pageSize.getHeight() - 8);
+            }
+        });
+
+        doc.save(`AI_Chat_Transcript_${new Date().getTime()}.pdf`);
+        };
 
     return (
         <div className="h-[calc(100vh-5rem)] max-h-[calc(100vh-5rem)] flex flex-col gap-0 -m-6 sm:-m-10">
@@ -175,18 +289,25 @@ const AIChatbot = () => {
                         <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-white rounded-full" />
                     </div>
                     <div>
-                        <h1 className="text-base font-black text-slate-900">Gateway AI Assistant</h1>
+                        <h1 className="text-base font-black text-slate-900">AI Assistant</h1>
                         <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
-                            Online · ERP-Pro
+                            Online · General Assistant
                         </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="hidden sm:flex items-center gap-1.5 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-blue-100">
                         <Sparkles className="w-3 h-3" />
-                        AI Powered
+                        ChatGPT Style
                     </div>
+                    <button
+                        onClick={exportChatPdf}
+                        className="p-2.5 text-slate-400 hover:text-blue-700 hover:bg-blue-50 rounded-xl transition-all"
+                        title="Export chat to PDF"
+                    >
+                        <Download className="w-4 h-4" />
+                    </button>
                     <button
                         onClick={clearChat}
                         className="p-2.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all"
@@ -236,7 +357,12 @@ const AIChatbot = () => {
                                 : 'bg-white border border-slate-200/60 text-slate-800 rounded-tl-sm'
                                 }`}>
                                 {msg.role === 'assistant'
-                                    ? <BubbleContent text={msg.text} />
+                                    ? (
+                                        <>
+                                            <BubbleContent text={msg.text} />
+                                            <ResponseMeta meta={msg.meta} />
+                                        </>
+                                    )
                                     : <p className="text-sm leading-relaxed">{msg.text}</p>
                                 }
                             </div>

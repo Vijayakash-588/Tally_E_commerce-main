@@ -34,6 +34,10 @@ ADMIN_REGISTRATION_KEY=your_admin_registration_key
 # Server
 PORT=5000
 NODE_ENV=development
+
+# AI via Ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.1
 ```
 
 ## 🚀 Getting Started
@@ -71,7 +75,19 @@ The API is structured around several microservices aggregated by the main gatewa
 - **Sales Service**: Sales orders and customer management.
 - **Purchase Service**: Purchase orders and supplier management.
 - **Invoice Service**: Generating and managing invoices.
-- **AI Service**: Integration with AI for chatbot features.
+- **AI Service**: Integration with Ollama-powered chatbot, predictions, anomaly detection, and recommendations.
+
+## 🤖 Ollama Setup
+
+1. Install Ollama from https://ollama.com
+2. Start Ollama on your machine.
+3. Pull a model, for example:
+   ```bash
+   ollama pull llama3.1
+   ```
+4. Keep `OLLAMA_BASE_URL` pointed at your local Ollama server.
+5. Set `OLLAMA_MODEL` to the model you pulled.
+6. Restart the backend and test the AI endpoints.
 
 ## 📚 API Documentation
 
