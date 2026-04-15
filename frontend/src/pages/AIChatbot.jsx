@@ -255,7 +255,7 @@ const AIChatbot = () => {
                 2: { cellWidth: contentWidth - 24 - 26 - 24 },
                 3: { cellWidth: 24 },
             },
-            didDrawPage: (data) => {
+            didDrawPage: () => {
                 doc.setFontSize(8);
                 doc.setTextColor(100);
                 doc.text('Generated from AI Assistant', margin, doc.internal.pageSize.getHeight() - 8);

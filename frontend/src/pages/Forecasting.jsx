@@ -121,7 +121,6 @@ const Forecasting = () => {
 
     const exportForecastPdf = () => {
         const doc = new jsPDF('landscape');
-        const pageWidth = doc.internal.pageSize.getWidth();
         const margin = 14;
 
         doc.setFont('helvetica', 'bold');
