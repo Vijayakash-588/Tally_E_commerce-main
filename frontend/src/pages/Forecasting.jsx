@@ -3,7 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { AlertTriangle, Package, RefreshCcw, TrendingUp, Download, Zap, BarChart3 } from 'lucide-react';
-import { getInventoryForecast } from '../api/inventory';
+import {
+    autoGenerateForecastPurchaseOrders,
+    exportInventoryForecastCsv,
+    getInventoryForecast,
+    getInventoryForecastAnalytics,
+} from '../api/inventory';
 import toast from 'react-hot-toast';
 
 const buildForecastAnalytics = (forecastRows = []) => {
@@ -49,15 +54,7 @@ const Forecasting = () => {
 
     const handleExportCSV = async () => {
         try {
-            const response = await fetch(`/api/inventory/forecast/export?${new URLSearchParams(params)}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-            });
-            if (!response.ok) {
-                const error = await response.json();
-                toast.error(`Export failed: ${error.message || response.statusText}`);
-                return;
-            }
-            const csvBlob = await response.blob();
+            const csvBlob = await exportInventoryForecastCsv(params);
             const url = window.URL.createObjectURL(csvBlob);
             const a = document.createElement('a');
             a.href = url;
@@ -75,19 +72,7 @@ const Forecasting = () => {
 
     const handleAutoGeneratePOs = async () => {
         try {
-            const response = await fetch('/api/inventory/forecast/purchase-orders', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ supplierId: null })
-            });
-            const result = await response.json();
-            if (!response.ok) {
-                toast.error(`PO generation failed: ${result.message || response.statusText}`);
-                return;
-            }
+            const result = await autoGenerateForecastPurchaseOrders({ supplierId: null }, params);
             if (result.success) {
                 toast.success(`✅ Created ${result.result.created} purchase orders (${result.result.failed} failed)`);
                 refetch();
@@ -102,15 +87,7 @@ const Forecasting = () => {
 
     const fetchAnalytics = async () => {
         try {
-            const response = await fetch(`/api/inventory/forecast/analytics?${new URLSearchParams(params)}`, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-            });
-            if (!response.ok) {
-                const error = await response.json();
-                toast.error(`Analytics failed: ${error.message || response.statusText}`);
-                return;
-            }
-            const result = await response.json();
+            const result = await getInventoryForecastAnalytics(params);
             setAnalytics(result.analytics);
             setShowAnalytics(true);
         } catch (err) {

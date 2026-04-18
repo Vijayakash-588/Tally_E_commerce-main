@@ -1,5 +1,6 @@
 const aiService = require('./ai.service');
 const { buildEvidence } = require('./evidence.service');
+const { analyzePromptNlp } = require('./nlp.service');
 const {
     calculateConfidence,
     buildWarnings,
@@ -10,9 +11,17 @@ const predictionsService = require('./ai-predictions.service');
 const anomalyService = require('./ai-anomaly.service');
 const recommendationsService = require('./ai-recommendations.service');
 
+const DATA_QUERY_TERMS = [
+    'sales', 'inventory', 'stock', 'invoice', 'payment', 'purchase', 'purchases',
+    'customer', 'customers', 'supplier', 'suppliers', 'report', 'reports', 'summary',
+    'dashboard', 'forecast', 'predict', 'prediction', 'estimate', 'future', 'trend',
+    'analytics', 'kpi', 'order', 'orders', 'product', 'products', 'profit', 'loss',
+    'p&l', 'ledger', 'reconciliation', 'bank', 'cash', 'tax', 'gst', 'expense', 'income'
+];
+
 const isDataQuery = (prompt = '') => {
     const lower = prompt.toLowerCase();
-    return ['sales', 'inventory', 'stock', 'invoice', 'payment', 'purchase', 'customer', 'supplier', 'report', 'forecast', 'predict', 'prediction', 'estimate', 'future', 'trend', 'order', 'product'].some((term) => lower.includes(term));
+    return DATA_QUERY_TERMS.some((term) => lower.includes(term));
 };
 
 /**
@@ -31,7 +40,8 @@ exports.chat = async (req, res) => {
             });
         }
 
-        const dataQuery = isDataQuery(trimmedMessage);
+        const nlp = analyzePromptNlp(trimmedMessage);
+        const dataQuery = isDataQuery(trimmedMessage) || nlp.erpIntent;
 
         let evidenceBundle = {
             evidence: [],
@@ -59,11 +69,18 @@ exports.chat = async (req, res) => {
             'Use the application data snapshot only when the question is actually about application data.',
             'If the question is unrelated to application data, answer it from general knowledge without forcing ERP context.',
             'If application data is relevant, use exact numbers and clearly separate verified facts from general guidance.',
+            'If NLP intent is hybrid_erp_knowledge, respond in two sections: Knowledge Answer and ERP Grounded Answer.',
+            'Use multilingual understanding, reasoning, summarization, structured output, and actionable planning in your response style.',
             'If the question needs the application to do something, describe the exact action the user should take and the result they should expect.',
             'Use bullets, sections, or code blocks when they make the answer clearer.',
             'Do not say you can only answer specific prompts or only ERP questions.',
             'Core capabilities in this app context: sales analysis, purchase analysis, inventory/stock checks, invoice/payment insights, trend/forecast guidance, and workflow recommendations.',
             '',
+            `NLP Intent: ${nlp.intent}`,
+            `NLP Language: ${nlp.language}`,
+            `NLP Modules: ${nlp.entities.modules.join(', ') || 'none'}`,
+            `NLP Metrics: ${nlp.entities.metrics.join(', ') || 'none'}`,
+            `NLP Time Range: ${nlp.entities.timeRange || 'not specified'}`,
             `Question: ${trimmedMessage}`,
             '',
             dataQuery ? 'Application Data Snapshot:' : 'No application data context needed for this question.',
@@ -73,7 +90,7 @@ exports.chat = async (req, res) => {
         ].join('\n');
 
         let rawReply = '';
-        let mode = 'explainable';
+        let mode = nlp.hybridIntent ? 'hybrid-explainable' : 'explainable';
         let providerErrorMessage = '';
 
         try {
@@ -117,7 +134,12 @@ exports.chat = async (req, res) => {
             evidence: evidenceBundle.evidence,
             warnings,
             actionSuggestions: evidenceBundle.actionSuggestions,
-            mode
+            mode,
+            nlp: {
+                intent: nlp.intent,
+                language: nlp.language,
+                entities: nlp.entities
+            }
         });
     } catch (error) {
         console.error('AI Controller Error:', error);

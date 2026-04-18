@@ -5,10 +5,29 @@ const { URL } = require('url');
 const OLLAMA_BASE_URL = (process.env.OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/$/, '');
 const MODEL = process.env.OLLAMA_MODEL || 'qwen2.5:1.5b';
 
+const DEFAULT_CHAT_OPTIONS = {
+  temperature: Number(process.env.OLLAMA_TEMPERATURE || 0.2),
+  top_p: Number(process.env.OLLAMA_TOP_P || 0.92),
+  top_k: Number(process.env.OLLAMA_TOP_K || 40),
+  repeat_penalty: Number(process.env.OLLAMA_REPEAT_PENALTY || 1.08),
+  num_ctx: Number(process.env.OLLAMA_NUM_CTX || 8192),
+  num_predict: Number(process.env.OLLAMA_NUM_PREDICT || 1000),
+};
+
 const buildMessages = (messages) => messages.map((message) => ({
   role: message.role,
   content: message.content,
 }));
+
+const resolveOllamaOptions = (options = {}) => ({
+  ...DEFAULT_CHAT_OPTIONS,
+  temperature: options.temperature ?? DEFAULT_CHAT_OPTIONS.temperature,
+  top_p: options.top_p ?? DEFAULT_CHAT_OPTIONS.top_p,
+  top_k: options.top_k ?? DEFAULT_CHAT_OPTIONS.top_k,
+  repeat_penalty: options.repeat_penalty ?? DEFAULT_CHAT_OPTIONS.repeat_penalty,
+  num_ctx: options.num_ctx ?? DEFAULT_CHAT_OPTIONS.num_ctx,
+  num_predict: options.max_tokens ?? options.num_predict ?? DEFAULT_CHAT_OPTIONS.num_predict,
+});
 
 const postJson = async (urlString, payload) => {
   const url = new URL(urlString);
@@ -58,11 +77,7 @@ const callOllamaChat = async (messages, options = {}) => {
     model: MODEL,
     messages: buildMessages(messages),
     stream: false,
-    options: {
-      temperature: options.temperature ?? 0.2,
-      top_p: 0.9,
-      num_predict: options.max_tokens || 700,
-    },
+    options: resolveOllamaOptions(options),
   });
 };
 

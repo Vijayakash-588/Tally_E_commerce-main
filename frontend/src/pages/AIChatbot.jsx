@@ -118,6 +118,21 @@ function ResponseMeta({ meta }) {
                     ))}
                 </div>
             )}
+
+            {(meta.mode || meta?.nlp?.intent) && (
+                <div className="flex flex-wrap gap-1.5">
+                    {meta.mode && (
+                        <span className="px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 font-semibold">
+                            Mode: {meta.mode}
+                        </span>
+                    )}
+                    {meta?.nlp?.intent && (
+                        <span className="px-2 py-1 rounded-lg bg-cyan-50 border border-cyan-100 text-cyan-700 font-semibold">
+                            NLP intent: {meta.nlp.intent}
+                        </span>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
@@ -149,7 +164,7 @@ const AIChatbot = () => {
         {
             id: 1,
             role: 'assistant',
-            text: "Hello! 👋 I'm your AI assistant, built to respond like ChatGPT and Copilot.\n\nI can answer general questions, help with code, explain concepts, and use your application data when it is relevant. What would you like to know today?",
+            text: "Hello! 👋 I'm your AI assistant, built to respond like ChatGPT and Copilot.\n\nI can answer general questions, help with code, explain concepts, and pull live ERP data for business queries. What would you like to know today?",
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
     ]);
@@ -187,7 +202,9 @@ const AIChatbot = () => {
                     confidence: aiResponse.confidence,
                     evidence: aiResponse.evidence,
                     warnings: aiResponse.warnings,
-                    actionSuggestions: aiResponse.actionSuggestions
+                    actionSuggestions: aiResponse.actionSuggestions,
+                    mode: aiResponse.mode,
+                    nlp: aiResponse.nlp
                 },
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }]);
@@ -418,7 +435,7 @@ const AIChatbot = () => {
                     </button>
                 </div>
                 <p className="text-center text-[10px] text-slate-300 font-medium mt-2 max-w-4xl mx-auto">
-                    Press Enter to send · Shift+Enter for new line · AI responses are illustrative
+                    Press Enter to send · Shift+Enter for new line · AI business answers use live ERP data
                 </p>
             </div>
         </div>

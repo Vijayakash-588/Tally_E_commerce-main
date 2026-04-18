@@ -56,3 +56,21 @@ export const getInventoryForecast = async (params = {}) => {
     const response = await api.get('/inventory/forecast', { params });
     return response.data;
 };
+
+export const getInventoryForecastAnalytics = async (params = {}) => {
+    const response = await api.get('/inventory/forecast/analytics', { params });
+    return response.data;
+};
+
+export const exportInventoryForecastCsv = async (params = {}) => {
+    const response = await api.get('/inventory/forecast/export', {
+        params,
+        responseType: 'blob',
+    });
+    return response.data;
+};
+
+export const autoGenerateForecastPurchaseOrders = async (payload = {}, params = {}) => {
+    const response = await api.post('/inventory/forecast/purchase-orders', payload, { params });
+    return response.data;
+};

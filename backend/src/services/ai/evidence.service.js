@@ -1,8 +1,16 @@
 const prisma = require('../../prisma');
 
+const DATA_QUERY_TERMS = [
+  'sales', 'inventory', 'stock', 'invoice', 'payment', 'purchase', 'purchases',
+  'customer', 'customers', 'supplier', 'suppliers', 'report', 'reports', 'summary',
+  'dashboard', 'forecast', 'predict', 'prediction', 'estimate', 'future', 'trend',
+  'chance', 'analytics', 'kpi', 'order', 'orders', 'product', 'products', 'profit',
+  'loss', 'p&l', 'ledger', 'reconciliation', 'bank', 'cash', 'tax', 'gst', 'expense', 'income'
+];
+
 const isDataQuery = (prompt = '') => {
   const lower = prompt.toLowerCase();
-  return ['sales', 'inventory', 'stock', 'invoice', 'payment', 'purchase', 'customer', 'supplier', 'report', 'forecast', 'predict', 'prediction', 'estimate', 'future', 'trend', 'chance'].some((k) => lower.includes(k));
+  return DATA_QUERY_TERMS.some((k) => lower.includes(k));
 };
 
 const hasAny = (text, keywords) => keywords.some((keyword) => text.includes(keyword));

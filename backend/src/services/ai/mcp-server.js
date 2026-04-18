@@ -153,6 +153,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 ], {
                     temperature: 0.2,
                     max_tokens: 1200,
+                    top_p: 0.92,
+                    top_k: 40,
+                    repeat_penalty: 1.08,
+                    num_ctx: 8192,
                 });
 
                 if (!response.success) {

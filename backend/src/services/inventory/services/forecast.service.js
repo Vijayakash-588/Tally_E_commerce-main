@@ -67,6 +67,15 @@ const parseJsonContent = (content) => {
     }
   }
 
+  const arrayMatch = text.match(/\[[\s\S]*\]/);
+  if (arrayMatch) {
+    try {
+      return JSON.parse(arrayMatch[0]);
+    } catch {
+      // Ignore and fall through.
+    }
+  }
+
   return null;
 };
 
@@ -96,7 +105,9 @@ const generateAiDemandAdjustments = async ({ products, horizonDays, leadTimeDays
         'You are an inventory demand forecasting assistant.',
         'Return only valid JSON.',
         'Use the product summaries to adjust demand forecasts.',
+        'Use trend, seasonality, stock coverage, risk level, and baseline demand to set demand multipliers.',
         'Keep demand_multiplier between 0.7 and 1.3 unless the history clearly supports a stronger shift.',
+        'Set higher confidence only when historical signals are strong and consistent.',
         'Be concise and do not add explanations outside JSON.'
       ].join(' '),
     },
@@ -133,17 +144,31 @@ const generateAiDemandAdjustments = async ({ products, horizonDays, leadTimeDays
   const adjustments = new Map();
 
   items.forEach((item) => {
-    const productId = item?.product_id;
+    const productId = String(item?.product_id || '').trim();
     if (!productId) return;
 
     adjustments.set(productId, {
-      demandMultiplier: clamp(Number(item.demand_multiplier ?? item.multiplier ?? 1), 0.5, 1.5),
+      demandMultiplier: clamp(Number(item.demand_multiplier ?? item.multiplier ?? 1), 0.6, 1.6),
       confidence: clamp(Number(item.confidence ?? 0.5), 0, 1),
       reasoning: String(item.reasoning || '').trim(),
     });
   });
 
   return adjustments;
+};
+
+const buildHeuristicAdjustment = ({ trend, seasonalityCoefficient, riskLevel }) => {
+  let multiplier = 1;
+
+  if (trend === 'UP') multiplier += 0.08;
+  if (trend === 'DOWN') multiplier -= 0.08;
+
+  multiplier += (Number(seasonalityCoefficient || 1) - 1) * 0.35;
+
+  if (riskLevel === 'HIGH') multiplier += 0.08;
+  if (riskLevel === 'LOW') multiplier -= 0.04;
+
+  return clamp(multiplier, 0.7, 1.4);
 };
 
 exports.getDemandForecast = async ({
@@ -182,16 +207,22 @@ exports.getDemandForecast = async ({
       salesByProduct[row.product_id] = {
         quantity: 0,
         product: row.products,
-        dailySales: []
+        dailySalesByDate: {}
       };
     }
-    salesByProduct[row.product_id].quantity += toNumber(row.quantity);
-    salesByProduct[row.product_id].dailySales.push(toNumber(row.quantity));
+    const qty = toNumber(row.quantity);
+    const dateKey = row.sale_date instanceof Date
+      ? row.sale_date.toISOString().slice(0, 10)
+      : String(row.sale_date || '').slice(0, 10);
+
+    salesByProduct[row.product_id].quantity += qty;
+    salesByProduct[row.product_id].dailySalesByDate[dateKey] =
+      (salesByProduct[row.product_id].dailySalesByDate[dateKey] || 0) + qty;
   });
 
   const forecast = levels.map((level) => {
     const sold = toNumber(salesByProduct[level.product_id]?.quantity);
-    const dailySales = salesByProduct[level.product_id]?.dailySales || [];
+    const dailySales = Object.values(salesByProduct[level.product_id]?.dailySalesByDate || {});
     const avgDailyDemand = sold / Math.max(lookbackDays, 1);
     
     // Advanced trend calculation
@@ -246,8 +277,13 @@ exports.getDemandForecast = async ({
   });
 
   const adjustedForecast = forecast.map((item) => {
-    const aiAdjustment = aiAdjustments.get(item.product_id);
-    const demandMultiplier = aiAdjustment?.demandMultiplier ?? 1;
+    const aiAdjustment = aiAdjustments.get(String(item.product_id));
+    const heuristicMultiplier = buildHeuristicAdjustment({
+      trend: item.trend,
+      seasonalityCoefficient: item.seasonality_coefficient,
+      riskLevel: item.risk_level,
+    });
+    const demandMultiplier = aiAdjustment?.demandMultiplier ?? heuristicMultiplier;
     const adjustedForecastDemand = item.forecast_demand * demandMultiplier;
     const adjustedReorderPoint = item.reorder_point * demandMultiplier;
     const adjustedDailyDemand = adjustedForecastDemand / Math.max(horizonDays, 1);
@@ -268,11 +304,11 @@ exports.getDemandForecast = async ({
       stock_cover_days: Number(adjustedStockCoverDays.toFixed(2)),
       risk_level: adjustedRiskLevel,
       ai_demand_multiplier: Number(demandMultiplier.toFixed(2)),
-      ai_confidence: Number((aiAdjustment?.confidence ?? 0.5).toFixed(2)),
-      ai_reasoning: aiAdjustment?.reasoning || '',
+      ai_confidence: Number((aiAdjustment?.confidence ?? 0.45).toFixed(2)),
+      ai_reasoning: aiAdjustment?.reasoning || 'Heuristic adjustment applied from trend, seasonality, and risk profile.',
       rationale: aiAdjustment?.reasoning
         ? `${item.rationale} AI model adjustment (${demandMultiplier.toFixed(2)}x): ${aiAdjustment.reasoning}`
-        : item.rationale,
+        : `${item.rationale} Heuristic adjustment (${demandMultiplier.toFixed(2)}x) applied while preserving baseline forecast stability.`,
     };
   });
 

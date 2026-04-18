@@ -14,7 +14,8 @@ export const sendChatMessage = async (message) => {
             evidence: response.data?.evidence || [],
             warnings: response.data?.warnings || [],
             actionSuggestions: response.data?.actionSuggestions || [],
-            mode: response.data?.mode || 'legacy'
+            mode: response.data?.mode || 'legacy',
+            nlp: response.data?.nlp || null
         };
     } catch (error) {
         const serverMessage = error?.response?.data?.message;
