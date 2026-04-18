@@ -249,3 +249,32 @@ enum approval_status {
   APPROVED
   REJECTED
 }
+
+model ethereum_anchors {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  entity_type      String         @db.VarChar(40)
+  entity_id        String         @db.VarChar(120)
+  payload_hash     String         @db.VarChar(66)
+  chain_id         Int?
+  network          String?        @db.VarChar(40)
+  tx_hash          String?        @unique @db.VarChar(80)
+  block_number     BigInt?
+  contract_address String?        @db.VarChar(80)
+  status           anchor_status  @default(PENDING)
+  error_message    String?
+  created_by       String?        @db.Uuid
+  raw_response     Json?
+  created_at       DateTime?      @default(now()) @db.Timestamptz(6)
+  confirmed_at     DateTime?      @db.Timestamptz(6)
+
+  @@index([entity_type, entity_id], map: "idx_eth_anchor_entity")
+  @@index([status], map: "idx_eth_anchor_status")
+  @@index([created_at], map: "idx_eth_anchor_created_at")
+}
+
+enum anchor_status {
+  PENDING
+  CONFIRMED
+  FAILED
+  SKIPPED
+}

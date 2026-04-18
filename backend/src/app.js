@@ -16,6 +16,7 @@ const supplierRoutes = require('./services/purchase/routes/supplier.routes');
 const invoiceRoutes = require('./services/invoice/routes/invoice.routes');
 const aiRoutes = require('./services/ai/routes/ai.routes');
 const approvalRoutes = require('./services/approval/routes/approval.routes');
+const blockchainRoutes = require('./services/blockchain/routes/blockchain.routes');
 
 const app = express();
 
@@ -75,6 +76,9 @@ app.use('/api/ai', aiRoutes);
 // Approval Workflow Service
 app.use('/api/approvals', approvalRoutes);
 
+// Blockchain Service (feature-flagged in service layer)
+app.use('/api/blockchain', blockchainRoutes);
+
 require('./swagger')(app);
 
 /**
@@ -107,7 +111,8 @@ app.get('/api/info', (req, res) => {
       { name: 'Purchase Service', endpoint: '/api/purchases', status: 'active' },
       { name: 'Supplier Service', endpoint: '/api/suppliers', status: 'active' },
       { name: 'Invoice Service', endpoint: '/api/invoices', status: 'active' },
-      { name: 'Approval Service', endpoint: '/api/approvals', status: 'active' }
+      { name: 'Approval Service', endpoint: '/api/approvals', status: 'active' },
+      { name: 'Blockchain Service', endpoint: '/api/blockchain', status: 'active' }
     ]
   });
 });

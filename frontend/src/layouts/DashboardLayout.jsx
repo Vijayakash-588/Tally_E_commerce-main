@@ -26,6 +26,7 @@ import {
     Calendar,
     LogOut,
     Bot
+    ,ShieldCheck
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -123,6 +124,7 @@ const DashboardLayout = () => {
                             { title: "Customers", sub: "Manage Customers", icon: Users, color: "bg-green-600", to: "/customers" },
                             { title: "Suppliers", sub: "Manage Suppliers", icon: Truck, color: "bg-purple-600", to: "/suppliers", roles: ['admin', 'manager'] },
                             { title: "Approvals", sub: "Maker-Checker", icon: Settings, color: "bg-slate-700", to: "/approvals", roles: ['admin', 'manager'] },
+                            { title: "Blockchain", sub: "Ethereum Proofs", icon: ShieldCheck, color: "bg-indigo-700", to: "/blockchain", roles: ['admin', 'manager'] },
                             { title: "AI Assistant", sub: "Chat with AI", icon: Bot, color: "bg-gradient-to-br from-blue-600 to-violet-600", to: "/ai-chat" },
                         ].filter((item) => !item.roles || hasRole(item.roles)).map((item, idx) => {
                             const NavIcon = item.icon;

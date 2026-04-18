@@ -1,4 +1,13 @@
 const prisma = require('../../../prisma');
+const ethereumService = require('../../blockchain/services/ethereum.service');
+
+const anchorBestEffort = (entityType, entityId, payload, createdBy = null) => {
+  Promise.resolve()
+    .then(() => ethereumService.anchorEntity({ entityType, entityId, payload, createdBy }))
+    .catch((err) => {
+      console.warn(`[blockchain] skipped anchor for ${entityType}:${entityId} - ${err.message}`);
+    });
+};
 
 /**
  * Generate unique invoice number
@@ -89,7 +98,7 @@ exports.createInvoice = async (data) => {
   }
 
   // Use a transaction to ensure invoice and stock movements succeed
-  return prisma.$transaction(async (tx) => {
+  const invoice = await prisma.$transaction(async (tx) => {
     // Create the invoice
     const invoice = await tx.invoices.create({
       data: {
@@ -132,6 +141,19 @@ exports.createInvoice = async (data) => {
 
     return invoice;
   });
+
+  // Non-blocking: never affect invoice creation if anchoring fails.
+  anchorBestEffort('invoice', invoice.id, {
+    invoiceId: invoice.id,
+    invoiceNumber: invoice.invoice_number,
+    customerId: invoice.customer_id,
+    totalAmount: Number(invoice.total_amount),
+    issueDate: invoice.issue_date,
+    dueDate: invoice.due_date,
+    status: invoice.status
+  }, data.user_id || data.created_by || null);
+
+  return invoice;
 };
 
 /**
@@ -329,7 +351,7 @@ exports.recordPayment = async (id, amount, paymentDetails = {}) => {
   const status = totalPaid >= Number(invoice.total_amount) ? 'PAID' : 'PARTIAL';
 
   // Use a transaction to ensure both payment record and invoice update succeed
-  return prisma.$transaction(async (tx) => {
+  const updatedInvoice = await prisma.$transaction(async (tx) => {
     // 1. Create the payment record
     await tx.payments.create({
       data: {
@@ -356,6 +378,19 @@ exports.recordPayment = async (id, amount, paymentDetails = {}) => {
       }
     });
   });
+
+  // Non-blocking: never affect payment flow if anchoring fails.
+  anchorBestEffort('invoice_payment', `${id}:${Date.now()}`, {
+    invoiceId: id,
+    amount: Number(amount),
+    method: paymentDetails.method || 'bank_transfer',
+    reference: paymentDetails.reference || null,
+    status: updatedInvoice.status,
+    paidAmount: Number(updatedInvoice.paid_amount),
+    totalAmount: Number(updatedInvoice.total_amount)
+  });
+
+  return updatedInvoice;
 };
 
 /**

@@ -23,6 +23,7 @@ import AIChatbot from './pages/AIChatbot';
 import StockLevels from './pages/StockLevels';
 import Forecasting from './pages/Forecasting';
 import Approvals from './pages/Approvals';
+import Blockchain from './pages/Blockchain';
 
 function App() {
   return (
@@ -55,6 +56,7 @@ function App() {
                   <Route path="/banking" element={<Banking />} />
                   <Route path="/invoices" element={<Invoices />} />
                   <Route path="/approvals" element={<Approvals />} />
+                  <Route path="/blockchain" element={<Blockchain />} />
                 </Route>
               </Route>
             </Route>
