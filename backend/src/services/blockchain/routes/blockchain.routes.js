@@ -44,9 +44,20 @@ router.get('/health', auth, authorize('admin', 'manager'), controller.health);
  *         schema:
  *           type: string
  *       - in: query
- *         name: limit
+ *         name: page
  *         schema:
  *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *           default: 30
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, CONFIRMED, FAILED, SKIPPED]
  *     responses:
  *       200:
  *         description: List of anchor records
@@ -75,6 +86,26 @@ router.get('/health', auth, authorize('admin', 'manager'), controller.health);
  */
 router.get('/anchors', auth, authorize('admin', 'manager'), controller.listAnchors);
 router.post('/anchors', auth, authorize('admin', 'manager'), controller.anchor);
+
+/**
+ * @swagger
+ * /api/blockchain/anchors/{id}:
+ *   get:
+ *     summary: Get a specific anchor by id
+ *     tags: [Blockchain]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Anchor record
+ */
+router.get('/anchors/:id', auth, authorize('admin', 'manager'), controller.getAnchor);
 
 /**
  * @swagger

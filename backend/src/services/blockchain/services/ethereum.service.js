@@ -6,6 +6,8 @@ const DEFAULT_ABI = [
   'function anchorDocument(string entityType, string entityId, bytes32 payloadHash) external returns (bytes32)'
 ];
 
+const ANCHOR_STATUSES = ['PENDING', 'CONFIRMED', 'FAILED', 'SKIPPED'];
+
 const getFeatureFlags = () => ({
   blockchainEnabled: String(process.env.BLOCKCHAIN_ENABLED || 'false').toLowerCase() === 'true',
   ethereumEnabled: String(process.env.ETHEREUM_ENABLED || 'false').toLowerCase() === 'true'
@@ -40,6 +42,12 @@ const hashPayload = (payload) => {
   return `0x${digest}`;
 };
 
+const normalizeStatus = (value) => {
+  if (!value) return undefined;
+  const normalized = String(value).trim().toUpperCase();
+  return ANCHOR_STATUSES.includes(normalized) ? normalized : undefined;
+};
+
 const getSignerAndContract = () => {
   const config = getEthereumConfig();
 
@@ -70,6 +78,31 @@ const anchorEntity = async ({ entityType, entityId, payload, createdBy = null })
   }
 
   const payloadHash = hashPayload(payload || {});
+
+  const duplicateWindowStart = new Date(Date.now() - 5 * 60 * 1000);
+  const existingAnchor = await prisma.ethereum_anchors.findFirst({
+    where: {
+      entity_type: entityType,
+      entity_id: String(entityId),
+      payload_hash: payloadHash,
+      created_at: {
+        gte: duplicateWindowStart
+      },
+      status: {
+        in: ['PENDING', 'CONFIRMED', 'SKIPPED']
+      }
+    },
+    orderBy: { created_at: 'desc' }
+  });
+
+  if (existingAnchor) {
+    return {
+      success: true,
+      duplicate: true,
+      message: 'Duplicate anchor request ignored',
+      anchor: existingAnchor
+    };
+  }
 
   if (!ethereumEnabled) {
     const skipped = await createAnchor({
@@ -130,15 +163,56 @@ const anchorEntity = async ({ entityType, entityId, payload, createdBy = null })
   }
 };
 
-const getAnchors = async ({ entityType, entityId, limit = 50 } = {}) => {
-  return prisma.ethereum_anchors.findMany({
-    where: {
-      entity_type: entityType || undefined,
-      entity_id: entityId || undefined
-    },
-    orderBy: { created_at: 'desc' },
-    take: Number(limit)
-  });
+const getAnchors = async ({ entityType, entityId, status, page = 1, pageSize = 30 } = {}) => {
+  const parsedPage = Number(page);
+  const parsedPageSize = Number(pageSize);
+
+  const safePage = Number.isFinite(parsedPage) ? Math.max(parsedPage, 1) : 1;
+  const safePageSize = Number.isFinite(parsedPageSize) ? Math.min(Math.max(parsedPageSize, 1), 100) : 30;
+  const safeStatus = normalizeStatus(status);
+
+  const where = {
+    entity_type: entityType || undefined,
+    entity_id: entityId || undefined,
+    status: safeStatus || undefined
+  };
+
+  const [items, total] = await Promise.all([
+    prisma.ethereum_anchors.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      skip: (safePage - 1) * safePageSize,
+      take: safePageSize
+    }),
+    prisma.ethereum_anchors.count({ where })
+  ]);
+
+  const totalPages = total === 0 ? 1 : Math.ceil(total / safePageSize);
+
+  return {
+    items,
+    pagination: {
+      page: safePage,
+      pageSize: safePageSize,
+      total,
+      totalPages,
+      hasNextPage: safePage < totalPages,
+      hasPreviousPage: safePage > 1
+    }
+  };
+};
+
+const getAnchorStatuses = () => {
+  return [...ANCHOR_STATUSES];
+};
+
+const getAnchorById = async (id) => {
+  const anchor = await prisma.ethereum_anchors.findUnique({ where: { id } });
+  if (!anchor) {
+    throw new Error('Anchor not found');
+  }
+
+  return anchor;
 };
 
 const verifyAnchorById = async (id) => {
@@ -221,12 +295,36 @@ const getHealth = async () => {
     return acc;
   }, {});
 
+  const [lastAnchor, failedLast24h] = await Promise.all([
+    prisma.ethereum_anchors.findFirst({
+      orderBy: { created_at: 'desc' }
+    }),
+    prisma.ethereum_anchors.count({
+      where: {
+        status: 'FAILED',
+        created_at: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+        }
+      }
+    })
+  ]);
+
+  const totalAnchors = Object.values(totals).reduce((acc, count) => acc + count, 0);
+  const confirmedAnchors = totals.CONFIRMED || 0;
+  const successRate = totalAnchors > 0 ? Number(((confirmedAnchors / totalAnchors) * 100).toFixed(2)) : 0;
+
   return {
     feature: {
       blockchainEnabled,
       ethereumEnabled
     },
-    totals
+    totals,
+    metrics: {
+      totalAnchors,
+      successRate,
+      failedLast24h,
+      lastAnchorAt: lastAnchor?.created_at || null
+    }
   };
 };
 
@@ -268,6 +366,8 @@ const retryFailedAnchors = async (limit = 25) => {
 module.exports = {
   anchorEntity,
   getAnchors,
+  getAnchorStatuses,
+  getAnchorById,
   verifyAnchorById,
   verifyEntity,
   getHealth,

@@ -7,7 +7,28 @@ export const getBlockchainHealth = async () => {
 
 export const getAnchors = async (params = {}) => {
     const response = await api.get('/blockchain/anchors', { params });
-    return response.data?.data || [];
+    const payload = response.data || {};
+    return {
+        items: payload.data || [],
+        pagination: payload.pagination || {
+            page: 1,
+            pageSize: Number(params.pageSize || 30),
+            total: 0,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPreviousPage: false
+        }
+    };
+};
+
+export const getAnchorById = async (id) => {
+    const response = await api.get(`/blockchain/anchors/${id}`);
+    return response.data?.data || response.data;
+};
+
+export const createAnchor = async (payload) => {
+    const response = await api.post('/blockchain/anchors', payload);
+    return response.data?.data || response.data;
 };
 
 export const verifyAnchor = async (id) => {
