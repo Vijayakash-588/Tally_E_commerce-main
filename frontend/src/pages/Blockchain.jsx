@@ -38,6 +38,7 @@ const Blockchain = () => {
         payloadText: '{\n  "source": "manual"\n}'
     });
     const [verifyForm, setVerifyForm] = useState({ entityType: '', entityId: '' });
+    const statusOptions = useMemo(() => ['', 'PENDING', 'CONFIRMED', 'FAILED', 'SKIPPED'], []);
 
     const canManage = hasRole(['admin', 'manager']);
 
@@ -155,8 +156,6 @@ const Blockchain = () => {
         hasNextPage: false,
         hasPreviousPage: false
     };
-    const statusOptions = useMemo(() => ['', 'PENDING', 'CONFIRMED', 'FAILED', 'SKIPPED'], []);
-
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between gap-3">

@@ -120,7 +120,7 @@ app.get('/api/info', (req, res) => {
 /**
  * Centralized error handler
  */
-app.use((err, req, res, _next) => {
+app.use((err, req, res) => {
   console.error(err.stack);
   res.status(err.status || 500).json({
     success: false,

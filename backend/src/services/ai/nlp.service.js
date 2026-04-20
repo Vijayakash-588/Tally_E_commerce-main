@@ -23,8 +23,20 @@ const METRIC_TERMS = [
 
 const hasAny = (text, terms) => terms.some((term) => text.includes(term));
 
+const isAsciiLike = (text) => {
+  for (const char of text) {
+    const code = char.charCodeAt(0);
+    const isPrintableAscii = code >= 32 && code <= 126;
+    const isAllowedWhitespace = code === 9 || code === 10 || code === 13;
+    if (!isPrintableAscii && !isAllowedWhitespace) {
+      return false;
+    }
+  }
+  return true;
+};
+
 const detectLanguage = (text) => {
-  if (/^[\x00-\x7F\s.,?!:;'"()\[\]{}+\-/*%$#@&=<>_`~|\\]*$/.test(text)) {
+  if (isAsciiLike(text)) {
     return 'english_or_ascii';
   }
 
