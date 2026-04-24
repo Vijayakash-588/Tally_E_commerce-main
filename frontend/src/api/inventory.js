@@ -74,3 +74,8 @@ export const autoGenerateForecastPurchaseOrders = async (payload = {}, params = 
     const response = await api.post('/inventory/forecast/purchase-orders', payload, { params });
     return response.data;
 };
+
+export const getSuppliersForAutoPO = async (params = {}) => {
+    const response = await api.get('/suppliers', { params });
+    return response.data?.data || [];
+};

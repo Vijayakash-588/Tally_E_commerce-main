@@ -320,8 +320,62 @@ exports.getDemandForecast = async ({
     });
 };
 
+/**
+ * Get latest supplier pricing for a product
+ */
+const getSupplierPricing = async (supplierId, productId, defaultPrice = 1000) => {
+  try {
+    // Get the most recent purchase of this product from this supplier
+    const recentPurchase = await prisma.purchases.findFirst({
+      where: {
+        supplier_id: supplierId,
+        product_id: productId
+      },
+      orderBy: { purchase_date: 'desc' }
+    });
+
+    if (recentPurchase && recentPurchase.unit_price) {
+      return Number(recentPurchase.unit_price);
+    }
+
+    // Fallback: get average price from any supplier for this product
+    const avgPurchase = await prisma.purchases.aggregate({
+      where: { product_id: productId },
+      _avg: { unit_price: true }
+    });
+
+    return avgPurchase._avg?.unit_price ? Number(avgPurchase._avg.unit_price) : defaultPrice;
+  } catch (err) {
+    console.warn(`Failed to fetch pricing for product ${productId} from supplier ${supplierId}:`, err.message);
+    return defaultPrice;
+  }
+};
+
 // Auto-generate purchase orders for critical items
 exports.autoGeneratePurchaseOrders = async ({ forecastData, supplierId = null }) => {
+  // Validate supplier_id is provided
+  if (!supplierId) {
+    return {
+      total: 0,
+      created: 0,
+      failed: 0,
+      orders: [],
+      error: 'supplierId is required to generate purchase orders'
+    };
+  }
+
+  // Validate supplier exists
+  const supplier = await prisma.suppliers.findUnique({ where: { id: supplierId } });
+  if (!supplier) {
+    return {
+      total: 0,
+      created: 0,
+      failed: 0,
+      orders: [],
+      error: `Supplier with id ${supplierId} not found`
+    };
+  }
+
   const criticalItems = forecastData.filter(item => 
     (item.risk_level === 'HIGH' || item.risk_level === 'MEDIUM') && 
     item.recommended_order_qty > 0
@@ -331,20 +385,24 @@ exports.autoGeneratePurchaseOrders = async ({ forecastData, supplierId = null })
 
   for (const item of criticalItems) {
     try {
+      // Fetch real pricing from supplier purchase history
+      const unitPrice = await getSupplierPricing(supplierId, item.product_id);
+
       const order = await prisma.purchases.create({
         data: {
-          supplier_id: supplierId || 'default-supplier-id', // TODO: Get from UI
+          supplier_id: supplierId,
           product_id: item.product_id,
-          quantity: item.recommended_order_qty,
-          unit_price: '1000.00', // TODO: Get from supplier pricing
-          discount: '0.00',
-          tax: '0.00',
+          quantity: Math.round(item.recommended_order_qty),
+          unit_price: new prisma.Prisma.Decimal(unitPrice.toFixed(2)),
+          discount: new prisma.Prisma.Decimal('0.00'),
+          tax: new prisma.Prisma.Decimal('0.00'),
           purchase_date: new Date()
         }
       });
       createdOrders.push({
         ...item,
         purchase_order_id: order.id,
+        unit_price: unitPrice,
         status: 'CREATED'
       });
     } catch (err) {
@@ -360,7 +418,11 @@ exports.autoGeneratePurchaseOrders = async ({ forecastData, supplierId = null })
     total: criticalItems.length,
     created: createdOrders.filter(o => o.status === 'CREATED').length,
     failed: createdOrders.filter(o => o.status === 'FAILED').length,
-    orders: createdOrders
+    orders: createdOrders,
+    supplier: {
+      id: supplier.id,
+      name: supplier.name
+    }
   };
 };
 

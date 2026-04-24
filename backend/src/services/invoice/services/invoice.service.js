@@ -1,9 +1,9 @@
 const prisma = require('../../../prisma');
-const ethereumService = require('../../blockchain/services/ethereum.service');
+const blockchainService = require('../../blockchain/services/blockchain.service');
 
 const anchorBestEffort = (entityType, entityId, payload, createdBy = null) => {
   Promise.resolve()
-    .then(() => ethereumService.anchorEntity({ entityType, entityId, payload, createdBy }))
+    .then(() => blockchainService.anchorEntity({ entityType, entityId, payload, createdBy }))
     .catch((err) => {
       console.warn(`[blockchain] skipped anchor for ${entityType}:${entityId} - ${err.message}`);
     });

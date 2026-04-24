@@ -8,8 +8,10 @@ import {
     exportInventoryForecastCsv,
     getInventoryForecast,
     getInventoryForecastAnalytics,
+    getSuppliersForAutoPO,
 } from '../api/inventory';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 
 const buildForecastAnalytics = (forecastRows = []) => {
     const riskSummary = { HIGH: 0, MEDIUM: 0, LOW: 0 };
@@ -34,22 +36,33 @@ const buildForecastAnalytics = (forecastRows = []) => {
 };
 
 const Forecasting = () => {
+    const { user } = useAuth();
     const [params, setParams] = useState({
         lookbackDays: 30,
         horizonDays: 30,
         leadTimeDays: 7,
-        safetyStockDays: 3
+        safetyStockDays: 3,
     });
 
     const [showAnalytics, setShowAnalytics] = useState(false);
     const [analytics, setAnalytics] = useState(null);
+    const [selectedSupplierId, setSelectedSupplierId] = useState('');
+    const [isGeneratingPO, setIsGeneratingPO] = useState(false);
+    const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
 
-    const { data, isLoading, isFetching, refetch } = useQuery({
+    const { data, isLoading, isFetching, isError, error, refetch } = useQuery({
         queryKey: ['inventory-forecast', params],
-        queryFn: () => getInventoryForecast(params)
+        queryFn: () => getInventoryForecast(params),
+    });
+
+    const { data: suppliers = [] } = useQuery({
+        queryKey: ['suppliers-for-autopo'],
+        queryFn: () => getSuppliersForAutoPO(),
+        staleTime: 5 * 60 * 1000,
     });
 
     const rows = data?.data || [];
+    const forecastErrorMessage = error?.response?.data?.message || error?.message || 'Failed to load forecast data';
     const reportAnalytics = analytics || buildForecastAnalytics(rows);
 
     const handleExportCSV = async () => {
@@ -63,36 +76,56 @@ const Forecasting = () => {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-            toast.success('✅ Forecast exported to CSV');
+            toast.success('Forecast exported to CSV');
         } catch (err) {
-            toast.error(`Export error: ${err.message}`);
+            const message = err.response?.data?.message || err.message;
+            toast.error(`Export error: ${message}`);
             console.error('Export error:', err);
         }
     };
 
     const handleAutoGeneratePOs = async () => {
+        if (user?.role !== 'admin') {
+            toast.error('Auto PO requires admin access.');
+            return;
+        }
+
+        if (!selectedSupplierId) {
+            toast.error('Please select a supplier before generating purchase orders.');
+            return;
+        }
+
         try {
-            const result = await autoGenerateForecastPurchaseOrders({ supplierId: null }, params);
+            setIsGeneratingPO(true);
+            const result = await autoGenerateForecastPurchaseOrders({ supplierId: selectedSupplierId }, params);
             if (result.success) {
-                toast.success(`✅ Created ${result.result.created} purchase orders (${result.result.failed} failed)`);
+                toast.success(`Created ${result.result.created} purchase orders (${result.result.failed} failed)`);
                 refetch();
             } else {
-                toast.error(`Error: ${result.message}`);
+                toast.error(`Error: ${result.message || 'Failed to generate purchase orders'}`);
             }
         } catch (err) {
-            toast.error(`PO error: ${err.message}`);
+            const message = err.response?.data?.message || err.message;
+            toast.error(`PO error: ${message}`);
             console.error('PO error:', err);
+        } finally {
+            setIsGeneratingPO(false);
         }
     };
 
     const fetchAnalytics = async () => {
         try {
+            setIsLoadingAnalytics(true);
             const result = await getInventoryForecastAnalytics(params);
-            setAnalytics(result.analytics);
+            setAnalytics(result.analytics || null);
             setShowAnalytics(true);
+            toast.success('Analytics loaded.');
         } catch (err) {
-            toast.error(`Analytics error: ${err.message}`);
+            const message = err.response?.data?.message || err.message;
+            toast.error(`Analytics error: ${message}`);
             console.error('Analytics error:', err);
+        } finally {
+            setIsLoadingAnalytics(false);
         }
     };
 
@@ -214,15 +247,17 @@ const Forecasting = () => {
                     </button>
                     <button
                         onClick={handleAutoGeneratePOs}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 font-bold hover:bg-blue-100"
+                        disabled={isGeneratingPO}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 font-bold hover:bg-blue-100 disabled:opacity-60"
                     >
-                        <Zap className="w-4 h-4" /> Auto PO
+                        <Zap className={`w-4 h-4 ${isGeneratingPO ? 'animate-pulse' : ''}`} /> {isGeneratingPO ? 'Generating...' : 'Auto PO'}
                     </button>
                     <button
                         onClick={fetchAnalytics}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 font-bold hover:bg-purple-100"
+                        disabled={isLoadingAnalytics}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 font-bold hover:bg-purple-100 disabled:opacity-60"
                     >
-                        <BarChart3 className="w-4 h-4" /> Analytics
+                        <BarChart3 className={`w-4 h-4 ${isLoadingAnalytics ? 'animate-pulse' : ''}`} /> {isLoadingAnalytics ? 'Loading...' : 'Analytics'}
                     </button>
                 </div>
             </div>
@@ -232,7 +267,7 @@ const Forecasting = () => {
                     { key: 'lookbackDays', label: 'Lookback (days)' },
                     { key: 'horizonDays', label: 'Forecast horizon' },
                     { key: 'leadTimeDays', label: 'Lead time' },
-                    { key: 'safetyStockDays', label: 'Safety stock days' }
+                    { key: 'safetyStockDays', label: 'Safety stock days' },
                 ].map((field) => (
                     <label key={field.key} className="flex flex-col gap-1 text-xs font-bold text-slate-600">
                         {field.label}
@@ -247,6 +282,30 @@ const Forecasting = () => {
                 ))}
             </div>
 
+            {isError && (
+                <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-sm text-rose-800 font-semibold">
+                    Unable to load demand forecast: {forecastErrorMessage}
+                </div>
+            )}
+
+            <div className="bg-white border border-slate-200 rounded-2xl p-4">
+                <label className="flex flex-col gap-1 text-xs font-bold text-slate-600">
+                    Supplier for Auto PO
+                    <select
+                        value={selectedSupplierId}
+                        onChange={(e) => setSelectedSupplierId(e.target.value)}
+                        className="px-3 py-2 rounded-lg border border-slate-300"
+                    >
+                        <option value="">Select supplier</option>
+                        {suppliers.map((supplier) => (
+                            <option key={supplier.id} value={supplier.id}>
+                                {supplier.name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            </div>
+
             {showAnalytics && analytics && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-2xl p-6">
                     <div className="bg-white rounded-xl p-4 border border-purple-100">
@@ -255,7 +314,7 @@ const Forecasting = () => {
                     </div>
                     <div className="bg-white rounded-xl p-4 border border-rose-100">
                         <div className="text-xs font-bold uppercase text-rose-600">High Risk</div>
-                        <div className="text-2xl font-black text-slate-900">{analytics.riskSummary.HIGH}</div>
+                        <div className="text-2xl font-black text-slate-900">{analytics.riskSummary?.HIGH || 0}</div>
                     </div>
                     <div className="bg-white rounded-xl p-4 border border-amber-100">
                         <div className="text-xs font-bold uppercase text-amber-600">Total Recommended Qty</div>
@@ -289,6 +348,12 @@ const Forecasting = () => {
                         {isLoading ? (
                             <tr>
                                 <td colSpan="11" className="px-4 py-8 text-center text-slate-500">Loading forecast...</td>
+                            </tr>
+                        ) : isError ? (
+                            <tr>
+                                <td colSpan="11" className="px-4 py-8 text-center text-rose-600 font-semibold">
+                                    Forecast request failed: {forecastErrorMessage}
+                                </td>
                             </tr>
                         ) : rows.length === 0 ? (
                             <tr>

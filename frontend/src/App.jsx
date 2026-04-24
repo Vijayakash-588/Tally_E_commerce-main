@@ -46,9 +46,9 @@ function App() {
                 <Route path="/active-stock" element={<StockSummary />} />
                 <Route path="/ai-chat" element={<AIChatbot />} />
                 <Route path="/stock-levels" element={<StockLevels />} />
-                <Route path="/forecasting" element={<Forecasting />} />
 
                 <Route element={<ProtectedRoute allowedRoles={['admin', 'manager']} />}>
+                  <Route path="/forecasting" element={<Forecasting />} />
                   <Route path="/products" element={<Products />} />
                   <Route path="/sales-invoices" element={<SalesInvoice />} />
                   <Route path="/purchases" element={<Purchases />} />

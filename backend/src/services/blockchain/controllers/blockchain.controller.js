@@ -1,4 +1,4 @@
-const service = require('../services/ethereum.service');
+const service = require('../services/blockchain.service');
 
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
 
