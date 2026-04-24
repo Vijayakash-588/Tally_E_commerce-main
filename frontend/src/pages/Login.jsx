@@ -38,7 +38,7 @@ const Login = () => {
                         <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
                             <Layout className="w-8 h-8 text-white" />
                         </div>
-                        <span className="text-2xl font-bold tracking-wide">TallyERP</span>
+                        <span className="text-2xl font-bold tracking-wide">ERP_PRO</span>
                     </div>
 
                     <h1 className="text-5xl font-bold leading-tight mb-6">
