@@ -42,6 +42,20 @@ The project is divided into two main components:
    npm run dev
    ```
 
+### Enable Blockchain
+
+For local development, set these in `backend/.env`:
+
+```env
+BLOCKCHAIN_ENABLED=true
+BLOCKCHAIN_PROVIDER=local
+ETHEREUM_ENABLED=false
+```
+
+Restart the backend, then open the Blockchain page in the app. This enables anchor creation, verification, and retry flows without requiring Ethereum.
+
+To use real Ethereum anchoring, set `BLOCKCHAIN_PROVIDER=ethereum`, `ETHEREUM_ENABLED=true`, and provide `ETHEREUM_RPC_URL`, `ETHEREUM_PRIVATE_KEY`, and `ETHEREUM_CONTRACT_ADDRESS`.
+
 ## 🛠️ Tech Stack
 
 ### Frontend
